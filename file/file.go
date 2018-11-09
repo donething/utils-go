@@ -27,9 +27,16 @@ const (
 	ALL  = FILE + " " + DIR
 )
 
-// 根据指定路径创建文件对象
-func Get(path string) DFile {
-	return DFile{Path: path}
+// 根据指定路径创建文件对象，如果路径不存在，则返回error
+func Get(path string) (DFile, error) {
+	_, err := os.Stat(path)
+	if err != nil {
+		return DFile{}, err
+	}
+	if os.IsNotExist(err) {
+		return DFile{}, fmt.Errorf("路径指向的文件不存在")
+	}
+	return DFile{Path: path}, nil
 }
 
 // 读取文件内容为字节
@@ -64,15 +71,6 @@ func (f DFile) Write(bytes []byte, append bool) (int, error) {
 	}
 	defer file.Close()
 	return file.Write(bytes)
-}
-
-// 文件是否存在
-func (f DFile) Exist() bool {
-	_, err := os.Stat(f.Path)
-	if err == nil {
-		return true
-	}
-	return os.IsExist(err)
 }
 
 // 文件是否为目录
@@ -116,9 +114,6 @@ func (f DFile) Parent() (path string) {
 
 // 重命名文件
 func (f DFile) Rename(newPath string) error {
-	if !f.Exist() {
-		return fmt.Errorf("源路径(%s)不存在", f.Path)
-	}
 	return os.Rename(f.Path, newPath)
 }
 
