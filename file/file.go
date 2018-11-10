@@ -4,6 +4,7 @@
 package file
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -27,14 +28,25 @@ const (
 	ALL  = FILE + " " + DIR
 )
 
+var (
+	ErrFileNotExists = errors.New("no such file or directory")
+	ErrIsFile        = errors.New("path to file")
+	ErrIsDir         = errors.New("path to directory")
+)
+
 // 根据指定路径创建文件对象，如果路径不存在，则返回error
 func Get(path string) (DFile, error) {
 	_, err := os.Stat(path)
 	if err != nil {
+		// 文件不存在错误
+		if strings.Contains(err.Error(), "no such file or directory") {
+			return DFile{}, ErrFileNotExists
+		}
+		// 其它错误
 		return DFile{}, err
 	}
 	if os.IsNotExist(err) {
-		return DFile{}, fmt.Errorf("路径指向的文件不存在")
+		return DFile{}, ErrFileNotExists
 	}
 	return DFile{Path: path}, nil
 }
@@ -42,8 +54,7 @@ func Get(path string) (DFile, error) {
 // 读取文件内容为字节
 func (f DFile) Read() (bytes []byte, err error) {
 	if f.IsDir() {
-		err = fmt.Errorf("指定路径(%s)为目录，无法读取字节", f.Path)
-		return
+		return nil, ErrIsDir
 	}
 	file, err := os.OpenFile(f.Path, os.O_RDONLY, PERM)
 	if err != nil {
@@ -56,7 +67,7 @@ func (f DFile) Read() (bytes []byte, err error) {
 // 将字节写入文件
 func (f DFile) Write(bytes []byte, append bool) (int, error) {
 	if f.IsDir() {
-		return 0, fmt.Errorf("指定路径(%s)为目录，无法写入字节", f.Path)
+		return 0, ErrIsDir
 	}
 	flag := 0
 	if append {
@@ -126,7 +137,7 @@ func (f DFile) Del() error {
 func (f DFile) List(filter string) ([]DFile, error) {
 	// 指定的对象为文件，无法列出目录
 	if !f.IsDir() {
-		return nil, fmt.Errorf("路径指向文件")
+		return nil, ErrIsFile
 	}
 
 	// 将返回的文件列表
@@ -157,4 +168,18 @@ func (f DFile) List(filter string) ([]DFile, error) {
 		}
 	}
 	return filesList, nil
+}
+
+// 列出目录下文件的路径
+func (f DFile) ListPaths(filter string) ([]string, error) {
+	dfiles, err := f.List(filter)
+	if err != nil {
+		return nil, err
+	}
+	// 讲DFile切片转为路径字符串切片
+	var paths = make([]string, 0, 0)
+	for _, f := range dfiles {
+		paths = append(paths, f.Path)
+	}
+	return paths, nil
 }
