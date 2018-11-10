@@ -5,7 +5,6 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 	"io/ioutil"
-	"strings"
 	"time"
 )
 
@@ -34,7 +33,7 @@ func UTF8ToGBK(s []byte) ([]byte, error) {
 // 格式化时间
 // 如果format为空白字符，则默认设为"2006-01-02 15:04:05"
 func FormatDate(t time.Time, format string) string {
-	if strings.TrimSpace(format) == "" {
+	if format == "" {
 		format = "2006-01-02 15:04:05"
 	}
 	return t.Format(format)
