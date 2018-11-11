@@ -58,14 +58,9 @@ func (client *DoClient) Request(req *http.Request, headers map[string]string) (r
 	// 此时还不能关闭response，否则无法读取响应的内容
 	// defer res.Body.Close()
 
-	// 响应码不为OK和Forward时，返回包含响应状态文本和响应文本的error
+	// 响应码不为OK和Forward时，返回包含响应状态的error
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
-		bs, errRead := ioutil.ReadAll(res.Body)
-		// 此处可能有坑：当errRead!=nil，而返回时，可能会误导出错的地方和原因
-		if errRead != nil {
-			return res, errRead
-		}
-		return res, fmt.Errorf("请求（%s）的Status：%s Body：\n%s\n", req.URL, res.Status, string(bs))
+		return res, fmt.Errorf("请求（%s）的Status：%s\n", req.URL, res.Status)
 	}
 	return
 }
@@ -77,7 +72,7 @@ func (client *DoClient) Get(url string, headers map[string]string) (res *http.Re
 		return
 	}
 	res, err = client.Request(req, headers)
-	// 因为没有后续操作，所以此处不需判断err是否为nil
+	// 因为没有后续操作，所以此处不需判断err==nil
 	return
 }
 
