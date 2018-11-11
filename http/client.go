@@ -64,9 +64,10 @@ func (client *DoClient) Request(req *http.Request, headers map[string]string) (r
 
 	// 响应码不为OK和Forward时，返回包含响应状态文本和响应文本的error
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
-		bs, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return res, err
+		bs, errRead := ioutil.ReadAll(res.Body)
+		// 此处可能有坑：当errRead!=nil时，返回当errRead时，可能会误导出错的地方和原因
+		if errRead != nil {
+			return res, errRead
 		}
 		return res, fmt.Errorf("请求（%s）的响应码为：%s：\n%s\n", req.URL, res.Status, string(bs))
 	}

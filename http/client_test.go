@@ -170,5 +170,7 @@ func TestDoClient_ReadTwiceResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log("文本：", text)
+	if !strings.Contains(text, "磁力链") {
+		t.Error("出错")
+	}
 }
