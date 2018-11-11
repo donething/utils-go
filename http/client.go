@@ -46,10 +46,6 @@ func New(timeout time.Duration, needCookieJar bool, checkSSL bool) *DoClient {
 // 此函数执行完毕后不会关闭response.Body，且其它调用链中，后续需要读取Response的也不能关闭
 // 需要在调用链中读取完Response后的函数（GetText()、GetFile()、Post()等）中关闭
 func (client *DoClient) Request(req *http.Request, headers map[string]string) (res *http.Response, err error) {
-	// 创建请求
-	if err != nil {
-		return
-	}
 	// 填充请求头
 	for key, value := range headers {
 		req.Header.Add(key, value)
@@ -65,11 +61,11 @@ func (client *DoClient) Request(req *http.Request, headers map[string]string) (r
 	// 响应码不为OK和Forward时，返回包含响应状态文本和响应文本的error
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
 		bs, errRead := ioutil.ReadAll(res.Body)
-		// 此处可能有坑：当errRead!=nil时，返回当errRead时，可能会误导出错的地方和原因
+		// 此处可能有坑：当errRead!=nil，而返回时，可能会误导出错的地方和原因
 		if errRead != nil {
 			return res, errRead
 		}
-		return res, fmt.Errorf("请求（%s）的响应码为：%s：\n%s\n", req.URL, res.Status, string(bs))
+		return res, fmt.Errorf("请求（%s）的Status：%s Body：\n%s\n", req.URL, res.Status, string(bs))
 	}
 	return
 }
