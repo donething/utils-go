@@ -1,2 +1,7 @@
-// github.com/donething/utils-go
 package main
+
+import "log"
+
+func main() {
+	log.Println("Hello.")
+}

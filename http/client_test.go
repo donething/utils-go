@@ -71,7 +71,6 @@ func TestDoClient_GetFile(t *testing.T) {
 		wantSize int64
 		wantErr  bool
 	}{
-		// TODO: Add test cases.
 		{
 			"Get Text",
 			fields{&http.Client{}},
@@ -121,7 +120,6 @@ func TestDoClient_PostForm(t *testing.T) {
 		wantData []byte
 		wantErr  bool
 	}{
-		// TODO: Add test cases.
 		{
 			name:   "Post Form",
 			fields: fields{},
