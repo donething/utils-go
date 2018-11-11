@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -60,6 +61,9 @@ func (client *DoClient) Request(req *http.Request, headers map[string]string) (r
 	}
 	// 此时还不能关闭response，否则无法读取响应的内容
 	// defer res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		log.Fatalf("警告：请求（%s）的响应码不为OK：%s\n", req.URL, res.Status)
+	}
 	return
 }
 
