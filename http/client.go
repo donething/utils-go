@@ -5,9 +5,9 @@ package dohttp
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -61,8 +61,14 @@ func (client *DoClient) Request(req *http.Request, headers map[string]string) (r
 	}
 	// 此时还不能关闭response，否则无法读取响应的内容
 	// defer res.Body.Close()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		log.Fatalf("警告：请求（%s）的响应码不为OK：%s\n", req.URL, res.Status)
+
+	// 响应码不为OK和Forward时，返回包含响应状态文本和响应文本的error
+	if res.StatusCode < 200 || res.StatusCode >= 400 {
+		bs, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return res, err
+		}
+		return res, fmt.Errorf("请求（%s）的响应码为：%s：\n%s\n", req.URL, res.Status, string(bs))
 	}
 	return
 }

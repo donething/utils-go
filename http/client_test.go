@@ -163,3 +163,12 @@ func TestDoClient_Form_JSON(t *testing.T) {
 	}
 	t.Log("jsonMap:", string(bs))
 }
+
+func TestDoClient_ReadTwiceResponse(t *testing.T) {
+	client := New(30*time.Second, false, false)
+	text, err := client.GetText("https://cililianbt.com/search/搜索/0/0/1.html", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("文本：", text)
+}
