@@ -5,7 +5,6 @@ package dohttp
 import (
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -52,16 +51,10 @@ func (client *DoClient) Request(req *http.Request, headers map[string]string) (r
 	}
 	// 执行请求
 	res, err = client.Do(req)
-	if err != nil {
-		return
-	}
 	// 此时还不能关闭response，否则无法读取响应的内容
 	// defer res.Body.Close()
 
-	// 响应码不为OK和Forward时，返回包含响应状态的error
-	if res.StatusCode < 200 || res.StatusCode >= 400 {
-		return res, fmt.Errorf("请求（%s）的Status：%s\n", req.URL, res.Status)
-	}
+	// 因为没有后续操作，所以此处不需判断err==nil
 	return
 }
 
@@ -83,6 +76,7 @@ func (client *DoClient) GetText(url string, headers map[string]string) (text str
 		return
 	}
 	defer res.Body.Close()
+
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return
@@ -97,6 +91,7 @@ func (client *DoClient) GetFile(url string, headers map[string]string, savePath 
 		return
 	}
 	defer res.Body.Close()
+
 	out, err := os.Create(savePath)
 	if err != nil {
 		return
