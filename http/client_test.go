@@ -25,7 +25,6 @@ func TestDoClient_GetText(t *testing.T) {
 		wantText string
 		wantErr  bool
 	}{
-		// TODO: Add test cases.
 		{
 			"Get Text",
 			fields{&http.Client{}},

@@ -33,7 +33,6 @@ func TestFormatDate(t *testing.T) {
 		args args
 		want string
 	}{
-		// TODO: Add test cases.
 		{
 			name: "default_format",
 			args: args{time.Date(2018, 11, 11, 0, 49, 1, 0, time.Local), ""},
