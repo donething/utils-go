@@ -52,17 +52,17 @@ func TestDFile_Md5(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &DFile{
+			f := &dFile{
 				Path:     tt.fields.Path,
 				FileInfo: tt.fields.FileInfo,
 			}
 			gotMd5Str, err := f.Md5()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DFile.Md5() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("dFile.Md5() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotMd5Str != tt.wantMd5Str {
-				t.Errorf("DFile.Md5() = %v, want %v", gotMd5Str, tt.wantMd5Str)
+				t.Errorf("dFile.Md5() = %v, want %v", gotMd5Str, tt.wantMd5Str)
 			}
 		})
 	}
