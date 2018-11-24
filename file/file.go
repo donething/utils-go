@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-type dFile struct {
+type DFile struct {
 	Path string // Get()函数中传递的路径
 	os.FileInfo
 }
@@ -37,17 +37,17 @@ var (
 )
 
 // 根据指定路径创建文件对象，如果路径不存在，则返回error
-func Get(path string) (*dFile, error) {
+func Get(path string) (*DFile, error) {
 	_, err := os.Stat(path)
 	if err != nil {
 		return nil, err
 	}
 	stat, err := os.Stat(path)
-	return &dFile{Path: path, FileInfo: stat}, err
+	return &DFile{Path: path, FileInfo: stat}, err
 }
 
 // 读取文件内容为字节
-func (f *dFile) Read() (bytes []byte, err error) {
+func (f *DFile) Read() (bytes []byte, err error) {
 	if f.IsDir() {
 		return nil, ErrIsDir
 	}
@@ -60,7 +60,7 @@ func (f *dFile) Read() (bytes []byte, err error) {
 }
 
 // 将字节写入文件
-func (f *dFile) Write(bytes []byte, append bool) (int, error) {
+func (f *DFile) Write(bytes []byte, append bool) (int, error) {
 	if f.IsDir() {
 		return 0, ErrIsDir
 	}
@@ -80,7 +80,7 @@ func (f *dFile) Write(bytes []byte, append bool) (int, error) {
 }
 
 // 获取除去后缀后的文件名(filename)
-func (f *dFile) BaseName() (name string) {
+func (f *DFile) BaseName() (name string) {
 	name = f.Name()
 	if dotIndex := strings.LastIndex(name, "."); dotIndex >= 0 {
 		name = name[:dotIndex]
@@ -90,13 +90,13 @@ func (f *dFile) BaseName() (name string) {
 
 // 返回父文件夹，如果指定路径已为根路径("C:"、"/")，则仍然返回根路径
 
-func (f *dFile) Parent() *dFile {
+func (f *DFile) Parent() *DFile {
 	p, _ := Get(f.ParentPath())
 	return p
 }
 
 // 返回父文件夹的路径，如果指定路径已为根路径("C:"、"/")，则仍然返回根路径
-func (f *dFile) ParentPath() (path string) {
+func (f *DFile) ParentPath() (path string) {
 	path = f.Path
 	if index := strings.LastIndex(path, SEP); index > 0 {
 		path = path[0:index]
@@ -110,24 +110,24 @@ func (f *dFile) ParentPath() (path string) {
 }
 
 // 重命名文件
-func (f *dFile) Rename(newPath string) error {
+func (f *DFile) Rename(newPath string) error {
 	return os.Rename(f.Path, newPath)
 }
 
 // 删除文件
-func (f *dFile) Del() error {
+func (f *DFile) Del() error {
 	return os.RemoveAll(f.Path)
 }
 
 // 列出目录
-func (f *dFile) List(filter string) ([]dFile, error) {
+func (f *DFile) List(filter string) ([]DFile, error) {
 	// 指定的对象为文件，无法列出目录
 	if !f.IsDir() {
 		return nil, ErrIsFile
 	}
 
 	// 将返回的文件列表
-	var filesList = make([]dFile, 0, 0)
+	var filesList = make([]DFile, 0, 0)
 
 	// 获取目录下的文件
 	files, err := ioutil.ReadDir(f.Path)
@@ -142,14 +142,14 @@ func (f *dFile) List(filter string) ([]dFile, error) {
 		switch filter {
 		case FILE: // 只获取文件
 			if !tmp.IsDir() {
-				filesList = append(filesList, dFile{Path: fpath, FileInfo: stat})
+				filesList = append(filesList, DFile{Path: fpath, FileInfo: stat})
 			}
 		case DIR: // 只获取目录
 			if tmp.IsDir() {
-				filesList = append(filesList, dFile{Path: fpath, FileInfo: stat})
+				filesList = append(filesList, DFile{Path: fpath, FileInfo: stat})
 			}
 		case ALL: // 获取文件和目录
-			filesList = append(filesList, dFile{Path: fpath, FileInfo: stat})
+			filesList = append(filesList, DFile{Path: fpath, FileInfo: stat})
 		default: // 过滤条件错误
 			return nil, fmt.Errorf("过滤条件错误")
 		}
@@ -158,7 +158,7 @@ func (f *dFile) List(filter string) ([]dFile, error) {
 }
 
 // 列出目录下文件的路径
-func (f *dFile) ListPaths(filter string) ([]string, error) {
+func (f *DFile) ListPaths(filter string) ([]string, error) {
 	dfiles, err := f.List(filter)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (f *dFile) ListPaths(filter string) ([]string, error) {
 }
 
 // 返回文件MD5值
-func (f *dFile) Md5() (md5Str string, err error) {
+func (f *DFile) Md5() (md5Str string, err error) {
 	if f.IsDir() {
 		return "", ErrIsDir
 	}
