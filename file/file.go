@@ -4,8 +4,10 @@
 package file
 
 import (
+	"crypto/md5"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -176,4 +178,25 @@ func (f *DFile) ListPaths(filter string) ([]string, error) {
 		paths = append(paths, f.Path)
 	}
 	return paths, nil
+}
+
+// 返回文件MD5值
+func (f *DFile) Md5() (md5Str string, err error) {
+	if f.IsDir() {
+		return "", ErrIsDir
+	}
+	out, err := os.Open(f.Path)
+	if err != nil {
+		return
+	}
+	defer out.Close()
+
+	md5hash := md5.New()
+	if _, err = io.Copy(md5hash, out); err != nil {
+		return
+	}
+
+	m5 := md5hash.Sum(nil)
+	md5Str = fmt.Sprintf("%x", m5)
+	return
 }
