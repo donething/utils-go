@@ -17,7 +17,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestDFile_ListPaths(t *testing.T) {
-	file, err := Get("/home/doneth/MyData")
+	file, err := Get("D:/Temp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,5 +25,5 @@ func TestDFile_ListPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%v\n", pathsList)
+	t.Logf("%v\n", pathsList[0])
 }
