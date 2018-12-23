@@ -58,8 +58,7 @@ func (client *DoClient) SetProxy(proxy string) {
 }
 
 // 执行请求
-// 此函数执行完毕后不会关闭response.Body，且其它调用链中，后续需要读取Response的也不能关闭
-// 需要在调用链中读取完Response后的函数（GetText()、GetFile()、Post()等）中关闭
+// 此函数没有关闭response.Body
 func (client *DoClient) request(req *http.Request, headers map[string]string) (res *http.Response, err error) {
 	// 填充请求头
 	for key, value := range headers {
@@ -76,6 +75,7 @@ func (client *DoClient) request(req *http.Request, headers map[string]string) (r
 
 // 执行Get请求，返回http.Response的指针
 // 该函数没有关闭response.Body，需读取响应后自行关闭
+// 期后续GetText()、GetFile()等方法中，已实现关闭响应
 func (client *DoClient) Get(url string, headers map[string]string) (res *http.Response, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -119,10 +119,15 @@ func (client *DoClient) GetFile(url string, headers map[string]string, savePath 
 }
 
 // Post请求
-// 次函数关闭了response：res.Body.Close()
-func (client *DoClient) Post(req *http.Request, headers map[string]string) (data []byte, err error) {
-	res, err := client.request(req, headers)
-	if err != nil {
+// 该函数没有关闭response.Body，需读取响应后自行关闭
+// 期后续PostForm()、PostJson()等方法中，已实现关闭响应
+func (client *DoClient) Post(req *http.Request, headers map[string]string) (res *http.Response, err error) {
+	return client.request(req, headers)
+}
+
+// 进行Post()后续读取响应和关闭Response的操作
+func dealPostResponse(res *http.Response, err1 error) (data []byte, err error) {
+	if err1 != nil {
 		return
 	}
 	defer res.Body.Close()
@@ -137,7 +142,7 @@ func (client *DoClient) PostForm(url string, form url.Values, headers map[string
 		return
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	return client.Post(req, headers)
+	return dealPostResponse(client.Post(req, headers))
 }
 
 // Post JSON字符串
@@ -147,7 +152,7 @@ func (client *DoClient) PostJSONString(url string, jsonStr string, headers map[s
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return client.Post(req, headers)
+	return dealPostResponse(client.Post(req, headers))
 }
 
 // POST map、struct等数据结构
