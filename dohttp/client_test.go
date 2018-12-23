@@ -121,7 +121,7 @@ func TestDoClient_PostForm(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:   "Post Form",
+			name:   "post Form",
 			fields: fields{},
 			args: args{"https://hu60.net/q.php/user.login.html?u=index.index.html",
 				form,
@@ -186,4 +186,52 @@ func TestDoClient_SetProxy(t *testing.T) {
 		t.Fatal(err)
 	}
 	log.Println(text)
+}
+
+func TestDoClient_Post(t *testing.T) {
+	client := New(10*time.Second, false, false)
+
+	form := url.Values{}
+	form.Add("reginvcode", "cb1e6c4be12e1364")
+	form.Add("action", "reginvcodeck")
+
+	str, err := client.PostForm("http://fdfds1223fd.com", form, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(str)
+}
+
+func TestDoClient_PostTest(t *testing.T) {
+	req, err := http.NewRequest(http.MethodPost, "http://fdfds1223fd.com", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer res.Body.Close()
+
+	t.Log(res.Body)
+}
+
+func TestDoClient_PostFile(t *testing.T) {
+	client := New(30*time.Second, false, false)
+	otherForm := map[string]string{
+		"file_id": "0",
+	}
+	data, err := client.PostFile(
+		"https://sm.ms/api/upload?inajax=1&ssl=1",
+		"D:/Users/Doneth/Pictures/BaiduShurufa_2018-12-23_19-40-45.png",
+		"smfile",
+		otherForm,
+		nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(data))
 }

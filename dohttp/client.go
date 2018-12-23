@@ -3,14 +3,18 @@
 package dohttp
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -65,19 +69,15 @@ func (client *DoClient) request(req *http.Request, headers map[string]string) (r
 		req.Header.Add(key, value)
 	}
 	// 执行请求
-	res, err = client.Do(req)
-	// 此时还不能关闭response，否则无法读取响应的内容
-	// defer res.Body.Close()
-
-	// 因为没有后续操作，所以此处不需判断err==nil
-	return
+	// 此时还不能关闭response，否则后续方法无法读取响应的内容
+	return client.Do(req)
 }
 
 // 执行Get请求，返回http.Response的指针
 // 该函数没有关闭response.Body，需读取响应后自行关闭
 // 期后续GetText()、GetFile()等方法中，已实现关闭响应
 func (client *DoClient) Get(url string, headers map[string]string) (res *http.Response, err error) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return
 	}
@@ -119,15 +119,9 @@ func (client *DoClient) GetFile(url string, headers map[string]string, savePath 
 }
 
 // Post请求
-// 该函数没有关闭response.Body，需读取响应后自行关闭
-// 期后续PostForm()、PostJson()等方法中，已实现关闭响应
-func (client *DoClient) Post(req *http.Request, headers map[string]string) (res *http.Response, err error) {
-	return client.request(req, headers)
-}
-
-// 进行Post()后续读取响应和关闭Response的操作
-func dealPostResponse(res *http.Response, err1 error) (data []byte, err error) {
-	if err1 != nil {
+func (client *DoClient) post(req *http.Request, headers map[string]string) (data []byte, err error) {
+	res, err := client.request(req, headers)
+	if err != nil {
 		return
 	}
 	defer res.Body.Close()
@@ -137,29 +131,82 @@ func dealPostResponse(res *http.Response, err1 error) (data []byte, err error) {
 
 // Post表单
 func (client *DoClient) PostForm(url string, form url.Values, headers map[string]string) (data []byte, err error) {
-	req, err := http.NewRequest("POST", url, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(form.Encode()))
 	if err != nil {
 		return
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	return dealPostResponse(client.Post(req, headers))
+	return client.post(req, headers)
 }
 
-// Post JSON字符串
+// post JSON字符串
 func (client *DoClient) PostJSONString(url string, jsonStr string, headers map[string]string) (data []byte, err error) {
-	req, err := http.NewRequest("POST", url, strings.NewReader(jsonStr))
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(jsonStr))
 	if err != nil {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return dealPostResponse(client.Post(req, headers))
+	return client.post(req, headers)
 }
 
-// POST map、struct等数据结构
+// POST map、struct等数据结构的json字符串
 func (client *DoClient) PostJSONObj(url string, jsonObj interface{}, headers map[string]string) (data []byte, err error) {
 	jsonBytes, err := json.Marshal(jsonObj)
 	if err != nil {
 		return
 	}
 	return client.PostJSONString(url, string(jsonBytes), headers)
+}
+
+// Post文件
+// filename：待上传文件的路径
+// fileFormField：表单中表示上传文件的键
+// otherForm：其它表单
+// https://www.golangnote.com/topic/124.html
+func (client *DoClient) PostFile(url string, filename string, fileFormField string, otherForm map[string]string, headers map[string]string) (data []byte, err error) {
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+	defer bodyWriter.Close()
+
+	// 添加其它表单值
+	for k, v := range otherForm {
+		_ = bodyWriter.WriteField(k, v)
+	}
+
+	// 添加文件表单值
+	// use the bodyWriter to write the Part headers to the buffer
+	_, err = bodyWriter.CreateFormFile(fileFormField, filepath.Base(filename))
+	if err != nil {
+		return
+	}
+
+	// the file data will be the second part of the body
+	fh, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	defer fh.Close()
+
+	// need to know the boundary to properly close the part myself.
+	boundary := bodyWriter.Boundary()
+	//close_string := fmt.Sprintf("\r\n--%s--\r\n", boundary)
+	closeBuf := bytes.NewBufferString(fmt.Sprintf("\r\n--%s--\r\n", boundary))
+
+	// use multi-reader to defer the reading of the file data until
+	// writing to the socket buffer.
+	requestReader := io.MultiReader(bodyBuf, fh, closeBuf)
+	req, err := http.NewRequest(http.MethodPost, url, requestReader)
+	if err != nil {
+		return
+	}
+
+	// Set headers for multipart, and Content Length
+	fi, err := fh.Stat()
+	if err != nil {
+		return
+	}
+	req.Header.Add("Content-Type", "multipart/form-data; boundary="+boundary)
+	req.ContentLength = fi.Size() + int64(bodyBuf.Len()) + int64(closeBuf.Len())
+
+	return client.post(req, headers)
 }
