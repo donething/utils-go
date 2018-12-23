@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// http.Client的包装
+// dohttp.Client的包装
 type DoClient struct {
 	*http.Client
 }

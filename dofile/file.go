@@ -1,7 +1,7 @@
 /**
 文件操作：使用Get()函数得到一个文件
 */
-package file
+package dofile
 
 import (
 	"crypto/md5"

@@ -28,7 +28,7 @@ func TestDoClient_GetText(t *testing.T) {
 		{
 			"Get Text",
 			fields{&http.Client{}},
-			args{"http://home.baidu.com/home/index/contact_us", nil},
+			args{"dohttp://home.baidu.com/home/index/contact_us", nil},
 			"联系我们",
 			false,
 		},
@@ -178,7 +178,7 @@ func TestDoClient_ReadTwiceResponse(t *testing.T) {
 func TestDoClient_SetProxy(t *testing.T) {
 	client := New(30*time.Second, false, false)
 
-	client.SetProxy("http://127.0.0.1:1080")
+	client.SetProxy("dohttp://127.0.0.1:1080")
 
 	log.Printf("client信息：%+v\n", client.Transport)
 	text, err := client.GetText("https://api.ipify.org", nil)
