@@ -20,7 +20,7 @@ import (
 )
 
 // dohttp.Client的包装
-type doClient struct {
+type DoClient struct {
 	*http.Client
 }
 
@@ -28,7 +28,7 @@ type doClient struct {
 var tr = &http.Transport{}
 
 // 创建新的DoClient
-func New(timeout time.Duration, needCookieJar bool, checkSSL bool) *doClient {
+func New(timeout time.Duration, needCookieJar bool, checkSSL bool) *DoClient {
 	// 根据参数，创建http.Client
 	c := &http.Client{}
 	// 超时时间
@@ -44,13 +44,13 @@ func New(timeout time.Duration, needCookieJar bool, checkSSL bool) *doClient {
 		c.Transport = tr
 	}
 
-	return &doClient{c}
+	return &DoClient{c}
 }
 
 // 设置代理
 // proxy格式如："http://127.0.0.1:1080"
 // 若为空字符串""，则清除之前设置的代理
-func (client *doClient) SetProxy(proxy string) {
+func (client *DoClient) SetProxy(proxy string) {
 	if proxy == "" {
 		tr.Proxy = nil
 	} else {
@@ -63,7 +63,7 @@ func (client *doClient) SetProxy(proxy string) {
 
 // 执行请求
 // 此函数没有关闭response.Body
-func (client *doClient) request(req *http.Request, headers map[string]string) (res *http.Response, err error) {
+func (client *DoClient) request(req *http.Request, headers map[string]string) (res *http.Response, err error) {
 	// 填充请求头
 	for key, value := range headers {
 		req.Header.Add(key, value)
@@ -76,7 +76,7 @@ func (client *doClient) request(req *http.Request, headers map[string]string) (r
 // 执行Get请求，返回http.Response的指针
 // 该函数没有关闭response.Body，需读取响应后自行关闭
 // 期后续GetText()、GetFile()等方法中，已实现关闭响应
-func (client *doClient) Get(url string, headers map[string]string) (res *http.Response, err error) {
+func (client *DoClient) Get(url string, headers map[string]string) (res *http.Response, err error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return
@@ -87,7 +87,7 @@ func (client *doClient) Get(url string, headers map[string]string) (res *http.Re
 }
 
 // 读取文本类型
-func (client *doClient) GetText(url string, headers map[string]string) (text string, err error) {
+func (client *DoClient) GetText(url string, headers map[string]string) (text string, err error) {
 	res, err := client.Get(url, headers)
 	if err != nil {
 		return
@@ -102,7 +102,7 @@ func (client *doClient) GetText(url string, headers map[string]string) (text str
 }
 
 // 下载文件到本地
-func (client *doClient) GetFile(url string, headers map[string]string, savePath string) (size int64, err error) {
+func (client *DoClient) GetFile(url string, headers map[string]string, savePath string) (size int64, err error) {
 	res, err := client.Get(url, headers)
 	if err != nil {
 		return
@@ -119,7 +119,7 @@ func (client *doClient) GetFile(url string, headers map[string]string, savePath 
 }
 
 // Post请求
-func (client *doClient) post(req *http.Request, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) post(req *http.Request, headers map[string]string) (data []byte, err error) {
 	res, err := client.request(req, headers)
 	if err != nil {
 		return
@@ -130,7 +130,7 @@ func (client *doClient) post(req *http.Request, headers map[string]string) (data
 }
 
 // Post表单
-func (client *doClient) PostForm(url string, form url.Values, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) PostForm(url string, form url.Values, headers map[string]string) (data []byte, err error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(form.Encode()))
 	if err != nil {
 		return
@@ -140,7 +140,7 @@ func (client *doClient) PostForm(url string, form url.Values, headers map[string
 }
 
 // post JSON字符串
-func (client *doClient) PostJSONString(url string, jsonStr string, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) PostJSONString(url string, jsonStr string, headers map[string]string) (data []byte, err error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(jsonStr))
 	if err != nil {
 		return
@@ -150,7 +150,7 @@ func (client *doClient) PostJSONString(url string, jsonStr string, headers map[s
 }
 
 // POST map、struct等数据结构的json字符串
-func (client *doClient) PostJSONObj(url string, jsonObj interface{}, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) PostJSONObj(url string, jsonObj interface{}, headers map[string]string) (data []byte, err error) {
 	jsonBytes, err := json.Marshal(jsonObj)
 	if err != nil {
 		return
@@ -163,7 +163,7 @@ func (client *doClient) PostJSONObj(url string, jsonObj interface{}, headers map
 // fileFormField：表单中表示上传文件的键
 // otherForm：其它表单
 // https://www.golangnote.com/topic/124.html
-func (client *doClient) PostFile(url string, filename string, fileFormField string, otherForm map[string]string, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) PostFile(url string, filename string, fileFormField string, otherForm map[string]string, headers map[string]string) (data []byte, err error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	defer bodyWriter.Close()

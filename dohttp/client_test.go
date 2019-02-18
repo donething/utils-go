@@ -45,11 +45,11 @@ func TestDoClient_GetText(t *testing.T) {
 			client := New(30*time.Second, true, false)
 			gotText, err := client.GetText(tt.args.url, tt.args.headers)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("doClient.GetText() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DoClient.GetText() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !strings.Contains(gotText, tt.wantText) {
-				t.Errorf("doClient.GetText() = %v, want %v", gotText, tt.wantText)
+				t.Errorf("DoClient.GetText() = %v, want %v", gotText, tt.wantText)
 			}
 		})
 	}
@@ -84,16 +84,16 @@ func TestDoClient_GetFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := &doClient{
+			client := &DoClient{
 				Client: tt.fields.Client,
 			}
 			gotSize, err := client.GetFile(tt.args.url, tt.args.headers, tt.args.savePath)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("doClient.GetFile() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DoClient.GetFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotSize != tt.wantSize {
-				t.Errorf("doClient.GetFile() = %v, want %v", gotSize, tt.wantSize)
+				t.Errorf("DoClient.GetFile() = %v, want %v", gotSize, tt.wantSize)
 			}
 		})
 	}
@@ -136,11 +136,11 @@ func TestDoClient_PostForm(t *testing.T) {
 			client := New(30*time.Second, true, false)
 			gotData, err := client.PostForm(tt.args.url, tt.args.form, tt.args.headers)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("doClient.PostForm() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DoClient.PostForm() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !strings.Contains(string(gotData), string(tt.wantData)) {
-				t.Errorf("doClient.PostForm() = %v, want %v", string(gotData), string(tt.wantData))
+				t.Errorf("DoClient.PostForm() = %v, want %v", string(gotData), string(tt.wantData))
 			}
 		})
 	}
