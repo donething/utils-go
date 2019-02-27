@@ -1,69 +1,119 @@
 package dofile
 
 import (
-	"os"
+	"log"
 	"testing"
 )
 
-func TestGet(t *testing.T) {
-	file, err := Get("/home/doneth/MyData")
-	if err != nil {
-		t.Fatal(err)
+func TestMd5(t *testing.T) {
+	type args struct {
+		path string
 	}
-	filesList, err := file.List(DIR)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("%v\n", filesList)
-}
-
-func TestDFile_ListPaths(t *testing.T) {
-	file, err := Get("D:/Temp")
-	if err != nil {
-		t.Fatal(err)
-	}
-	pathsList, err := file.List(DIR)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("%v\n", pathsList[0])
-}
-
-func TestDFile_Md5(t *testing.T) {
-	type fields struct {
-		Path     string
-		FileInfo os.FileInfo
-	}
-	path := "D:/Temp/ishike.json"
-	info, _ := os.Stat(path)
-
 	tests := []struct {
 		name       string
-		fields     fields
+		args       args
 		wantMd5Str string
 		wantErr    bool
 	}{
 		{
-			name:       "计算文件md5",
-			fields:     fields{Path: path, FileInfo: info},
-			wantMd5Str: "47982d3a26b4fcf0cd84aced7eaef2af",
-			wantErr:    false,
+			"Test md5",
+			args{"E:/Temp/20190226_PolarBearDay_ZH-CN5185516722_1920x1080.jpg"},
+			"bf9d0939df1039e2893b1004d5a169d7",
+			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &DFile{
-				Path:     tt.fields.Path,
-				FileInfo: tt.fields.FileInfo,
-			}
-			gotMd5Str, err := f.Md5()
+			gotMd5Str, err := Md5(tt.args.path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DFile.Md5() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Md5() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotMd5Str != tt.wantMd5Str {
-				t.Errorf("DFile.Md5() = %v, want %v", gotMd5Str, tt.wantMd5Str)
+				t.Errorf("Md5() = %v, want %v", gotMd5Str, tt.wantMd5Str)
 			}
 		})
 	}
+}
+
+func Test_isDir(t *testing.T) {
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			"Test File",
+			args{"E:/Temp/20190226_PolarBearDay_ZH-CN5185516722_1920x1080.jpg"},
+			false,
+			false,
+		},
+		{
+			"Test Dir",
+			args{"E:/Temp"},
+			true,
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := isDir(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("isDir() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("isDir() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPathExists(t *testing.T) {
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			"Test exists file",
+			args{"E:/Temp"},
+			true,
+			false,
+		},
+		{
+			"Test not exists file",
+			args{"E:/Temp/123"},
+			false,
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := PathExists(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PathExists() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("PathExists() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCheckIntegrity(t *testing.T) {
+	result, err := CheckIntegrity("E:/Temp/20190226_PolarBearDay_ZH-CN5185516722_1920x1080.jpg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Println(result)
 }

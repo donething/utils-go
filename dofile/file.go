@@ -1,182 +1,66 @@
-/**
-文件操作：使用Get()函数得到一个文件
-*/
 package dofile
 
 import (
 	"crypto/md5"
-	"errors"
+	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"log"
 	"os"
-	"path/filepath"
 	"strings"
 )
-
-type DFile struct {
-	Path string // Get()函数中传递的路径
-	os.FileInfo
-}
 
 const (
 	// 新建文件的权限
 	PERM = 0644
-	// 当前系统的路径分隔符
-	SEP = string(os.PathSeparator)
-
-	// 文件和目录的tag
-	FILE = "FILE"
-	DIR  = "DIR"
-	ALL  = FILE + " " + DIR
 )
 
-var (
-	ErrIsFile = errors.New("path to file")
-	ErrIsDir  = errors.New("path to directory")
-)
+type FileMagicNum struct {
+	// 需要读取文件头尾的字节数
+	nHead int64
+	nTail int64
+	// 文件头尾必须等于该十六进制字符串，该字符串为大写
+	headMust string
+	tailMust string
+}
 
-// 根据指定路径创建文件对象，如果路径不存在，则返回error
-func Get(path string) (*DFile, error) {
+// 判断路径是否存在
+// 参考：https://blog.csdn.net/xielingyun/article/details/49992455
+func PathExists(path string) (bool, error) {
 	_, err := os.Stat(path)
+	// 如果返回的错误为nil,说明文件或文件夹存在
+	// 如果返回的错误类型使用os.IsNotExist()判断为true,说明文件或文件夹不存在
+	// 如果返回的错误为其它类型,则不确定是否在存在
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+// 判断是否为目录
+// 参考：https://www.reddit.com/r/golang/comments/2fjwyk/isdir_in_go
+func isDir(path string) (bool, error) {
+	fi, err := os.Stat(path)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	stat, err := os.Stat(path)
-	return &DFile{Path: path, FileInfo: stat}, err
-}
-
-// 读取文件内容为字节
-func (f *DFile) Read() (bytes []byte, err error) {
-	if f.IsDir() {
-		return nil, ErrIsDir
-	}
-	in, err := os.OpenFile(f.Path, os.O_RDONLY, PERM)
-	if err != nil {
-		return
-	}
-	defer in.Close()
-	return ioutil.ReadAll(in)
-}
-
-// 将字节写入文件
-func (f *DFile) Write(bytes []byte, append bool) (int, error) {
-	if f.IsDir() {
-		return 0, ErrIsDir
-	}
-	flag := 0
-	if append {
-		flag = os.O_APPEND
-	} else {
-		flag = os.O_TRUNC
-	}
-
-	out, err := os.OpenFile(f.Path, flag|os.O_CREATE, PERM)
-	if err != nil {
-		return 0, err
-	}
-	defer out.Close()
-	return out.Write(bytes)
-}
-
-// 获取除去后缀后的文件名(filename)
-func (f *DFile) BaseName() (name string) {
-	name = f.Name()
-	if dotIndex := strings.LastIndex(name, "."); dotIndex >= 0 {
-		name = name[:dotIndex]
-	}
-	return
-}
-
-// 返回父文件夹，如果指定路径已为根路径("C:"、"/")，则仍然返回根路径
-
-func (f *DFile) Parent() *DFile {
-	p, _ := Get(f.ParentPath())
-	return p
-}
-
-// 返回父文件夹的路径，如果指定路径已为根路径("C:"、"/")，则仍然返回根路径
-func (f *DFile) ParentPath() (path string) {
-	path = f.Path
-	if index := strings.LastIndex(path, SEP); index > 0 {
-		path = path[0:index]
-	}
-
-	// 为类Unix系统专门处理("/home")
-	if path == "" {
-		path = SEP
-	}
-	return
-}
-
-// 重命名文件
-func (f *DFile) Rename(newPath string) error {
-	return os.Rename(f.Path, newPath)
-}
-
-// 删除文件
-func (f *DFile) Del() error {
-	return os.RemoveAll(f.Path)
-}
-
-// 列出目录
-func (f *DFile) List(filter string) ([]DFile, error) {
-	// 指定的对象为文件，无法列出目录
-	if !f.IsDir() {
-		return nil, ErrIsFile
-	}
-
-	// 将返回的文件列表
-	var filesList = make([]DFile, 0, 0)
-
-	// 获取目录下的文件
-	files, err := ioutil.ReadDir(f.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	// 根据过滤条件选择追加文件
-	for _, tmp := range files {
-		fpath := filepath.Clean(f.Path + SEP + tmp.Name()) // 文件路径
-		stat, _ := os.Stat(fpath)
-		switch filter {
-		case FILE: // 只获取文件
-			if !tmp.IsDir() {
-				filesList = append(filesList, DFile{Path: fpath, FileInfo: stat})
-			}
-		case DIR: // 只获取目录
-			if tmp.IsDir() {
-				filesList = append(filesList, DFile{Path: fpath, FileInfo: stat})
-			}
-		case ALL: // 获取文件和目录
-			filesList = append(filesList, DFile{Path: fpath, FileInfo: stat})
-		default: // 过滤条件错误
-			return nil, fmt.Errorf("过滤条件错误")
-		}
-	}
-	return filesList, nil
-}
-
-// 列出目录下文件的路径
-func (f *DFile) ListPaths(filter string) ([]string, error) {
-	dfiles, err := f.List(filter)
-	if err != nil {
-		return nil, err
-	}
-	// 讲DFile切片转为路径字符串切片
-	var paths = make([]string, 0, 0)
-	for _, f := range dfiles {
-		paths = append(paths, f.Path)
-	}
-	return paths, nil
+	return fi.IsDir(), nil
 }
 
 // 返回文件MD5值
-func (f *DFile) Md5() (md5Str string, err error) {
-	if f.IsDir() {
-		return "", ErrIsDir
+func Md5(path string) (md5Str string, err error) {
+	isdir, err := isDir(path)
+	if err != nil {
+		return
 	}
-	out, err := os.Open(f.Path)
+	if isdir {
+		return "", fmt.Errorf("目标为目录")
+	}
+
+	out, err := os.Open(path)
 	if err != nil {
 		return
 	}
@@ -190,4 +74,88 @@ func (f *DFile) Md5() (md5Str string, err error) {
 	m5 := md5hash.Sum(nil)
 	md5Str = fmt.Sprintf("%x", m5)
 	return
+}
+
+// 文件完整性检测
+func CheckIntegrity(path string) (integrity bool, err error) {
+	// 判断目标是否存在，不存在则返回错误
+	exist, err := PathExists(path)
+	if err != nil {
+		return
+	}
+	if !exist {
+		return false, fmt.Errorf("目标不存在")
+	}
+	// 判断目标是否为目录，为目录则返回错误
+	isdir, err := isDir(path)
+	if err != nil {
+		return
+	}
+	if isdir {
+		return false, fmt.Errorf("目标为目录")
+	}
+
+	// 验证文件
+	suffix := path[strings.LastIndex(path, ".")+1:] // 文件后缀
+
+	magicNum, err := GetMagicNum(suffix)
+	if err != nil {
+		return
+	}
+
+	headBytes, tailBytes, err := ReadHeadTailBytes(path, magicNum.nHead, magicNum.nTail)
+	head := hex.EncodeToString(headBytes)
+	tail := hex.EncodeToString(tailBytes)
+
+	log.Println(head, tail)
+
+	if (magicNum.headMust == "" || strings.ToUpper(head) == magicNum.headMust) &&
+		(magicNum.tailMust == "" || strings.ToUpper(tail) == magicNum.tailMust) {
+		return true, nil
+	}
+	return false, nil
+}
+
+// 读取文件头尾的几个字节
+func ReadHeadTailBytes(path string, n1 int64, n2 int64) (hbs []byte, tbs []byte, err error) {
+	// 打开目标文件
+	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	// 读取文件头n字节内容
+	startBytes := make([]byte, n1)
+	_, err = file.Read(startBytes)
+	if err != nil && err != io.EOF {
+		return
+	}
+
+	// 读取文件尾n字节内容
+	_, err = file.Seek(-1*n2, io.SeekEnd)
+	if err != nil {
+		return
+	}
+	endBytes := make([]byte, n2)
+	_, err = file.Read(endBytes)
+	if err != nil && err != io.EOF {
+		return
+	}
+
+	return startBytes, endBytes, nil
+}
+
+// 获取魔术数字
+func GetMagicNum(suffix string) (magic FileMagicNum, err error) {
+	switch suffix {
+	case "jpg", "jpeg":
+		return FileMagicNum{4, 2, "FFD8FFE0", "FFD9"}, nil
+	case "png":
+		return FileMagicNum{4, 4, "89504E47", ""}, nil
+	case "gif":
+		return FileMagicNum{4, 4, "47494638", ""}, nil
+	default:
+		return magic, fmt.Errorf("未知的文件格式：%s", suffix)
+	}
 }
