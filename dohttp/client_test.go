@@ -72,13 +72,22 @@ func TestDoClient_GetFile(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			"Get Text",
+			"Get File",
 			fields{&http.Client{}},
 			args{"https://code.jquery.com/jquery-3.3.1.slim.min.js",
 				nil,
-				"/home/doneth/Temp/get_file.txt",
+				`E:/Temp/get_file.txt`,
 			},
 			69917,
+			false,
+		},
+		{
+			"Get File Not Found",
+			fields{&http.Client{}},
+			args{"http://h1.ioliu.cn/bing/th?id=OHR.PolarBearDay_ZH-CN5185516722_1920x1080.jpg&rf=NorthMale_1920x1080.jpg",
+				nil,
+				`E:/Temp/temp.jpg`},
+			0,
 			false,
 		},
 	}

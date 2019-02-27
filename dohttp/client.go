@@ -108,6 +108,10 @@ func (client *DoClient) GetFile(url string, headers map[string]string, savePath 
 		return
 	}
 	defer res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		err = fmt.Errorf("响应码不在正确范围（200-299）内：%s", res.Status)
+		return
+	}
 
 	out, err := os.Create(savePath)
 	if err != nil {
