@@ -9,11 +9,7 @@ import (
 	"strings"
 )
 
-const (
-	// 新建文件的权限
-	PERM = 0644
-)
-
+// 文件的魔术数字的信息
 type FileMagicNum struct {
 	// 需要读取文件头尾的字节数
 	nHead int64
@@ -95,7 +91,7 @@ func CheckIntegrity(path string) (integrity bool, err error) {
 	}
 
 	// 验证文件
-	suffix := path[strings.LastIndex(path, ".")+1:] // 文件后缀
+	suffix := path[strings.LastIndex(path, "."):] // 文件后缀（包括点号"."）
 
 	magicNum, err := GetMagicNum(suffix)
 	if err != nil {
@@ -144,13 +140,14 @@ func ReadHeadTailBytes(path string, n1 int64, n2 int64) (hbs []byte, tbs []byte,
 }
 
 // 获取魔术数字
+// 文件头标志：https://www.cnblogs.com/WangAoBo/p/6366211.html
 func GetMagicNum(suffix string) (magic FileMagicNum, err error) {
 	switch suffix {
-	case "jpg", "jpeg":
+	case ".jpg", ".jpeg":
 		return FileMagicNum{4, 2, "FFD8FFE0", "FFD9"}, nil
-	case "png":
+	case ".png":
 		return FileMagicNum{4, 4, "89504E47", ""}, nil
-	case "gif":
+	case ".gif":
 		return FileMagicNum{4, 4, "47494638", ""}, nil
 	default:
 		return magic, fmt.Errorf("未知的文件格式：%s", suffix)
