@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 )
@@ -106,8 +105,6 @@ func CheckIntegrity(path string) (integrity bool, err error) {
 	headBytes, tailBytes, err := ReadHeadTailBytes(path, magicNum.nHead, magicNum.nTail)
 	head := hex.EncodeToString(headBytes)
 	tail := hex.EncodeToString(tailBytes)
-
-	log.Println(head, tail)
 
 	if (magicNum.headMust == "" || strings.ToUpper(head) == magicNum.headMust) &&
 		(magicNum.tailMust == "" || strings.ToUpper(tail) == magicNum.tailMust) {
