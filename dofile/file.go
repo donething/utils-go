@@ -32,10 +32,8 @@ func Read(path string) (bs []byte, err error) {
 	if err != nil {
 		return
 	}
+	defer fi.Close()
 	bs, err = ioutil.ReadAll(fi)
-	if err != nil {
-		return
-	}
 	return
 }
 
@@ -45,6 +43,7 @@ func Write(bs []byte, path string, mode int, perm os.FileMode) (n int, err error
 	if err != nil {
 		return
 	}
+	defer fi.Close()
 	n, err = fi.Write(bs)
 	return
 }
