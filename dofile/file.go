@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -17,6 +18,35 @@ type fileMagicNum struct {
 	// 文件头尾必须等于该十六进制字符串，该字符串为大写
 	headMust string
 	tailMust string
+}
+
+var (
+	WRITE_CREATE = os.O_CREATE
+	WRITE_APPEND = os.O_CREATE | os.O_APPEND
+	WRITE_TRUNC  = os.O_CREATE | os.O_TRUNC
+)
+
+// 读取文件
+func Read(path string) (bs []byte, err error) {
+	fi, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if err != nil {
+		return
+	}
+	bs, err = ioutil.ReadAll(fi)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// 向文件写内容
+func Write(bs []byte, path string, mode int, perm os.FileMode) (n int, err error) {
+	fi, err := os.OpenFile(path, mode, perm)
+	if err != nil {
+		return
+	}
+	n, err = fi.Write(bs)
+	return
 }
 
 // 判断路径是否存在

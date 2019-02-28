@@ -2,6 +2,8 @@ package dofile
 
 import (
 	"log"
+	"os"
+	"reflect"
 	"testing"
 )
 
@@ -116,4 +118,87 @@ func TestCheckIntegrity(t *testing.T) {
 		t.Fatal(err)
 	}
 	log.Println(result)
+}
+
+func TestRead(t *testing.T) {
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantBs  []byte
+		wantErr bool
+	}{
+		{
+			"Read Exist",
+			args{`E:/Temp/temp.txt`},
+			[]byte{49, 50, 51},
+			false,
+		},
+		{
+			"Read Not Exist",
+			args{`E:/Temp/temp12.txt`},
+			[]byte{},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotBs, err := Read(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotBs, tt.wantBs) {
+				t.Errorf("Read() = %v, want %v", gotBs, tt.wantBs)
+			}
+		})
+	}
+}
+
+func TestWrite(t *testing.T) {
+	type args struct {
+		bs   []byte
+		path string
+		mode int
+		perm os.FileMode
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantN   int
+		wantErr bool
+	}{
+		{
+			"Test Create",
+			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_cretae.txt`, WRITE_CREATE, 0644},
+			2,
+			false,
+		},
+		{
+			"Test Append",
+			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_append.txt`, WRITE_APPEND, 0644},
+			2,
+			false,
+		},
+		{
+			"Test Trunc",
+			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_trunc.txt`, WRITE_TRUNC, 0644},
+			2,
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotN, err := Write(tt.args.bs, tt.args.path, tt.args.mode, tt.args.perm)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Write() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotN != tt.wantN {
+				t.Errorf("Write() = %v, want %v", gotN, tt.wantN)
+			}
+		})
+	}
 }
