@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -181,4 +183,23 @@ func getMagicNum(suffix string) (magic fileMagicNum, err error) {
 	default:
 		return magic, fmt.Errorf("未知的文件格式：%s", suffix)
 	}
+}
+
+// 根据文件类型，选择合适的程序打开文件
+// 来源：https://gist.github.com/hyg/9c4afcd91fe24316cbf0
+func OpenAs(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "linux":
+		cmd = exec.Command("xdg-open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+
+	err := cmd.Start()
+	return err
 }
