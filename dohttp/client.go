@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -213,4 +214,18 @@ func (client *DoClient) PostFile(url string, filename string, fileFormField stri
 	req.ContentLength = fi.Size() + int64(bodyBuf.Len()) + int64(closeBuf.Len())
 
 	return client.post(req, headers)
+}
+
+// 检测网络是否可用
+// 参考：https://stackoverflow.com/a/42227115
+func CheckNetworkConn() bool {
+	timeout := 3 * time.Second
+	// 需要使用：ip:port 的格式
+	// 此处使用百度搜索的IP和端口：123.125.115.110:80
+	conn, err := net.DialTimeout("tcp", "123.125.115.110:80", timeout)
+	if err != nil {
+		return false
+	}
+	defer conn.Close() // 因为需要关闭连接，所有不能直接返回：return err!=nil
+	return true
 }

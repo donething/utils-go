@@ -244,3 +244,22 @@ func TestDoClient_PostFile(t *testing.T) {
 	}
 	t.Log(string(data))
 }
+
+func TestCheckNetworkConn(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{
+			"Test Conn",
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CheckNetworkConn(); got != tt.want {
+				t.Errorf("CheckNetworkConn() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
