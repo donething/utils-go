@@ -202,3 +202,10 @@ func TestWrite(t *testing.T) {
 		})
 	}
 }
+
+func TestShowInExplorer(t *testing.T) {
+	err := ShowInExplorer(`E:/Temp/get_file.txt`)
+	if err != nil {
+		t.Fatal(err)
+	}
+}

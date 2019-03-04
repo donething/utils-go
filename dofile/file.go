@@ -1,6 +1,7 @@
 package dofile
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -202,4 +203,29 @@ func OpenAs(url string) error {
 
 	err := cmd.Start()
 	return err
+}
+
+// 在资源管理器中显示文件
+func ShowInExplorer(path string) error {
+	var cmd *exec.Cmd
+	// 使用explorer显示文件
+	switch runtime.GOOS {
+	case "windows":
+		// explorer /select,path...，只能使用反斜杠"\"，不能使用斜杠"/"
+		path = strings.Replace(path, `/`, `\`, -1)
+		cmd = exec.Command("explorer", "/select,", path)
+	default:
+		return fmt.Errorf("还未适配平台：%s", runtime.GOOS)
+	}
+
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	// 不知何故，即使执行成功，依然会返回`exit status 1`的error。所以此处手动排除该错误
+	if err != nil && err.Error() != `exit status 1` {
+		return fmt.Errorf("err: %s,stderr: %s,strout: %s", err.Error(), stderr.String(), out.String())
+	}
+	return nil
 }
