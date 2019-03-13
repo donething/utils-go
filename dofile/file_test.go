@@ -209,3 +209,11 @@ func TestShowInExplorer(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCopyFile(t *testing.T) {
+	n, err := CopyFile("D:/MyData/Setting/Windows/bash.bashrc", "E:/Temp/bash.bashrc", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("文件复制完成：", n)
+}

@@ -51,6 +51,45 @@ func Write(bs []byte, path string, mode int, perm os.FileMode) (n int, err error
 	return
 }
 
+// 复制文件
+// 返回值n表示复制的字节数
+// 参考：https://opensource.com/article/18/6/copying-files-go
+// 更详细的的实现，可参考：https://stackoverflow.com/a/21067803
+func CopyFile(src string, dst string, override bool) (n int64, err error) {
+	// 目标文件是否存在
+	exist, err := PathExists(dst)
+	if err != nil {
+		return
+	}
+	if exist && !override {
+		return n, fmt.Errorf("the dst file is already exists")
+	}
+
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return
+	}
+	// non-regular files (e.g., directories, symlinks, devices, etc.
+	if !sourceFileStat.Mode().IsRegular() {
+		return n, fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return
+	}
+	defer source.Close()
+
+	destination, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return
+	}
+	defer destination.Close()
+
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
+}
+
 // 判断路径是否存在
 // 参考：https://blog.csdn.net/xielingyun/article/details/49992455
 func PathExists(path string) (bool, error) {
