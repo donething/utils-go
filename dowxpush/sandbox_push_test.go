@@ -1,7 +1,7 @@
-package wxpush
+package dowxpush
 
 import (
-	"github.com/donething/utils-go/wxpush/entity"
+	"github.com/donething/utils-go/dowxpush/entity"
 	"log"
 	"testing"
 )

@@ -1,11 +1,11 @@
 // 微信测试号，消息推送
-package wxpush
+package dowxpush
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
-	"github.com/donething/utils-go/wxpush/entity"
+	"github.com/donething/utils-go/dowxpush/entity"
 	"time"
 )
 
