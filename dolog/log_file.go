@@ -10,7 +10,7 @@ const (
 	// 可选的log文件名
 	LOG_NAME = "run.log"
 	// 可选的log记录格式
-	LOG_FLAGS = log.LstdFlags | log.Lshortfile
+	LOG_FORMAT = log.LstdFlags | log.Lshortfile
 )
 
 // 设置将log保存到文件
