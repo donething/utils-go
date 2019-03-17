@@ -1,6 +1,7 @@
 package dofile
 
 import (
+	"encoding/hex"
 	"log"
 	"os"
 	"reflect"
@@ -216,4 +217,12 @@ func TestCopyFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log("文件复制完成：", n)
+}
+
+func TestReadHeadTailBytes(t *testing.T) {
+	n1, n2, err := ReadHeadTailBytes("D:/Users/Doneth/Downloads/006Yjd8ogy1g0zvj6ny49g304604oe1g.gif", 0, 2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("%s,%s\n", hex.EncodeToString(n1), hex.EncodeToString(n2))
 }

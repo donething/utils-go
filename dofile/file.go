@@ -23,7 +23,7 @@ type fileMagicNum struct {
 	tailMust string
 }
 
-var (
+const (
 	WRITE_CREATE = os.O_CREATE
 	WRITE_APPEND = os.O_CREATE | os.O_APPEND
 	WRITE_TRUNC  = os.O_CREATE | os.O_TRUNC
@@ -161,7 +161,7 @@ func CheckIntegrity(path string) (integrity bool, err error) {
 		return false, fmt.Errorf("目标为目录")
 	}
 
-	// 验证文件
+	// 开始验证文件
 	suffix := path[strings.LastIndex(path, "."):] // 文件后缀（包括点号"."）
 
 	magicNum, err := getMagicNum(suffix)
@@ -173,6 +173,7 @@ func CheckIntegrity(path string) (integrity bool, err error) {
 	head := hex.EncodeToString(headBytes)
 	tail := hex.EncodeToString(tailBytes)
 
+	// 文件类型的魔术数字可以为空字符串""，此时判为符合
 	if (magicNum.headMust == "" || strings.ToUpper(head) == magicNum.headMust) &&
 		(magicNum.tailMust == "" || strings.ToUpper(tail) == magicNum.tailMust) {
 		return true, nil
@@ -217,7 +218,7 @@ func getMagicNum(suffix string) (magic fileMagicNum, err error) {
 	case ".jpg", ".jpeg":
 		return fileMagicNum{4, 2, "FFD8FFE0", "FFD9"}, nil
 	case ".png":
-		return fileMagicNum{4, 4, "89504E47", ""}, nil
+		return fileMagicNum{4, 4, "89504E47", "AE426082"}, nil
 	case ".gif":
 		return fileMagicNum{4, 4, "47494638", ""}, nil
 	default:
