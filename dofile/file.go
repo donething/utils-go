@@ -214,7 +214,7 @@ func ReadHeadTailBytes(path string, n1 int64, n2 int64) (hbs []byte, tbs []byte,
 // 获取魔术数字
 // 文件头标志：https://www.cnblogs.com/WangAoBo/p/6366211.html
 func getMagicNum(suffix string) (magic fileMagicNum, err error) {
-	switch suffix {
+	switch strings.ToLower(suffix) {
 	case ".jpg", ".jpeg":
 		return fileMagicNum{4, 2, "FFD8FFE0", "FFD9"}, nil
 	case ".png":
