@@ -14,7 +14,7 @@ const (
 )
 
 // 设置将log保存到文件
-// openFlags为文件读写模式
+// openFlags为文件读写模式：dofile中WRITE_***
 func Log2File(logName string, openFlags int, logFormat int) (err error) {
 	// 打印log时显示时间戳
 	log.SetFlags(logFormat)
