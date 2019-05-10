@@ -1,11 +1,12 @@
 // 微信测试号，消息推送
-package dowxpush
+package sandbox
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
-	"github.com/donething/utils-go/dowxpush/entity"
+	"github.com/donething/utils-go/dowxpush/sandbox/entity"
+	"log"
 	"time"
 )
 
@@ -40,30 +41,14 @@ func NewSandbox(appID string, appSecret string) (wx WXSendbox, err error) {
 }
 
 // 推送模板消息
-func (wx *WXSendbox) PushTpl(pushMsg entity.PushMsg) (success bool, respText string, err error) {
+func (wx *WXSendbox) PushTpl(pushMsg entity.PushMsg) (respBytes []byte, err error) {
 	// 创建POST的json数据
 	bs, err := json.Marshal(pushMsg)
 	if err != nil {
 		return
 	}
 	jsonText := string(bs)
-
+	log.Println(jsonText)
 	// 推送消息
-	bs, err = wx.client.PostJSONString(wx.pushURL, jsonText, nil)
-	if err != nil {
-		return
-	}
-
-	// 根据推送返回的结果，判断是否推送成功
-	var pushResp entity.PushResp
-	err = json.Unmarshal(bs, &pushResp)
-	if err != nil {
-		return
-	}
-	// 推送成功
-	if pushResp.Errcode == 0 {
-		return true, string(bs), err
-	}
-	// 推送失败
-	return false, string(bs), err
+	return wx.client.PostJSONString(wx.pushURL, jsonText, nil)
 }
