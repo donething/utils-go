@@ -173,19 +173,19 @@ func TestWrite(t *testing.T) {
 	}{
 		{
 			"Test Create",
-			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_cretae.txt`, WRITE_CREATE, 0644},
+			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_cretae.txt`, WriteCreate, 0644},
 			2,
 			false,
 		},
 		{
 			"Test Append",
-			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_append.txt`, WRITE_APPEND, 0644},
+			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_append.txt`, WriteAppend, 0644},
 			2,
 			false,
 		},
 		{
 			"Test Trunc",
-			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_trunc.txt`, WRITE_TRUNC, 0644},
+			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_trunc.txt`, WriteTrunc, 0644},
 			2,
 			false,
 		},

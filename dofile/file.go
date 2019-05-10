@@ -24,9 +24,9 @@ type fileMagicNum struct {
 }
 
 const (
-	WRITE_CREATE = os.O_CREATE
-	WRITE_APPEND = os.O_CREATE | os.O_APPEND
-	WRITE_TRUNC  = os.O_CREATE | os.O_TRUNC
+	WriteCreate = os.O_CREATE
+	WriteAppend = os.O_CREATE | os.O_APPEND
+	WriteTrunc  = os.O_CREATE | os.O_TRUNC
 )
 
 // 读取文件

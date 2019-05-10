@@ -8,13 +8,13 @@ import (
 
 const (
 	// 可选的log文件名
-	LOG_NAME = "run.log"
+	LogName = "run.log"
 	// 可选的log记录格式
-	LOG_FORMAT = log.LstdFlags | log.Lshortfile
+	LogFormat = log.LstdFlags | log.Lshortfile
 )
 
 // 将log保存到文件
-// 参数：openFlags为文件读写模式：dofile中WRITE_***
+// 参数openFlags为文件读写模式：dofile中WRITE_***
 // 返回值：lf为日志文件的FileInfo，需要在程序结束时，手动调用 lf.close()
 func LogToFile(logName string, openFlags int, logFormat int) (lf *os.File, err error) {
 	// 打印log时显示时间戳
