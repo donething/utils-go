@@ -40,9 +40,9 @@ func TestWXSendbox_Push(t *testing.T) {
 		Data:       data,
 	}
 
-	res, err := wx.PushTpl(msgEntity)
+	resp, err := wx.PushTpl(msgEntity)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(string(res))
+	t.Logf("%#v\n", resp)
 }

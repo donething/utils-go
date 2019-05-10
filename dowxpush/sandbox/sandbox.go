@@ -41,7 +41,7 @@ func NewSandbox(appID string, appSecret string) (wx WXSendbox, err error) {
 }
 
 // 推送模板消息
-func (wx *WXSendbox) PushTpl(pushMsg entity.PushMsg) (respBytes []byte, err error) {
+func (wx *WXSendbox) PushTpl(pushMsg entity.PushMsg) (resp entity.PushResp, err error) {
 	// 创建POST的json数据
 	bs, err := json.Marshal(pushMsg)
 	if err != nil {
@@ -50,5 +50,11 @@ func (wx *WXSendbox) PushTpl(pushMsg entity.PushMsg) (respBytes []byte, err erro
 	jsonText := string(bs)
 	log.Println(jsonText)
 	// 推送消息
-	return wx.client.PostJSONString(wx.pushURL, jsonText, nil)
+	bs, err = wx.client.PostJSONString(wx.pushURL, jsonText, nil)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(bs, &resp)
+	return
 }
