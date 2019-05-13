@@ -8,7 +8,7 @@ import (
 
 func Test_PlayAudio(t *testing.T) {
 	for i := 1; i <= 5; i++ {
-		err := PlayAudio(audios.Success, 2, 2, BufSize8192)
+		err := PlayAudio(audios.Beep, 2, 2, BufSize8192)
 		if err != nil {
 			log.Printf("error: %v\n", err)
 		}
