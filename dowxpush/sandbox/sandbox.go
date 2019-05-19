@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
 	"github.com/donething/utils-go/dowxpush/sandbox/entity"
-	"log"
 	"time"
 )
 
@@ -48,7 +47,6 @@ func (wx *WXSendbox) PushTpl(pushMsg entity.PushMsg) (resp entity.PushResp, err 
 		return
 	}
 	jsonText := string(bs)
-	log.Println(jsonText)
 	// 推送消息
 	bs, err = wx.client.PostJSONString(wx.pushURL, jsonText, nil)
 	if err != nil {
