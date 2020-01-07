@@ -24,6 +24,9 @@ import (
 type DoClient struct {
 	*http.Client
 }
+type DoReq struct {
+	*http.Request
+}
 
 // client参数
 var tr = &http.Transport{}
@@ -62,10 +65,15 @@ func (client *DoClient) SetProxy(proxy string) {
 	client.Transport = tr
 }
 
+// 设置cookie，不设置，则使用默认jar
+func (client *DoClient) SetJar(jar *http.CookieJar) {
+	client.Jar = *jar
+}
+
 // 执行请求
 // 此函数没有关闭response.Body
-func (client *DoClient) request(req *http.Request, headers map[string]string) (res *http.Response, err error) {
-	// 填充请求头
+func (client *DoClient) Request(req *http.Request, headers map[string]string) (res *http.Response, err error) {
+	//	// 填充请求头
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
@@ -82,7 +90,7 @@ func (client *DoClient) Get(url string, headers map[string]string) (res *http.Re
 	if err != nil {
 		return
 	}
-	res, err = client.request(req, headers)
+	res, err = client.Request(req, headers)
 	// 因为没有后续操作，所以此处不需判断err==nil
 	return
 }
@@ -125,7 +133,7 @@ func (client *DoClient) GetFile(url string, headers map[string]string, savePath 
 
 // Post请求
 func (client *DoClient) post(req *http.Request, headers map[string]string) (data []byte, err error) {
-	res, err := client.request(req, headers)
+	res, err := client.Request(req, headers)
 	if err != nil {
 		return
 	}
