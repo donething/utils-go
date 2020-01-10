@@ -143,8 +143,9 @@ func (client *DoClient) post(req *http.Request, headers map[string]string) (data
 }
 
 // Post表单
-func (client *DoClient) PostForm(url string, form url.Values, headers map[string]string) (data []byte, err error) {
-	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(form.Encode()))
+// form格式:a=1&b=2
+func (client *DoClient) PostForm(url string, form string, headers map[string]string) (data []byte, err error) {
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(form))
 	if err != nil {
 		return
 	}
