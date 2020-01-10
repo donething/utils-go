@@ -10,6 +10,44 @@ import (
 	"time"
 )
 
+func TestDoClient_Get(t *testing.T) {
+	type fields struct {
+		Client *http.Client
+	}
+	type args struct {
+		url     string
+		headers map[string]string
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		wantData []byte
+		wantErr  bool
+	}{
+		{
+			name:     "Test1",
+			fields:   fields{},
+			args:     args{url: "https://www.v2ex.com", headers: nil},
+			wantData: []byte("DOCTYPE"),
+			wantErr:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := New(10*time.Second, true, false)
+			gotData, err := client.Get(tt.args.url, tt.args.headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DoClient.Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !strings.Contains(string(gotData), "DOCTYPE") {
+				t.Errorf("DoClient.Get() = %v, want %v", gotData, tt.wantData)
+			}
+		})
+	}
+}
+
 func TestDoClient_GetText(t *testing.T) {
 	type fields struct {
 		Client *http.Client
@@ -27,8 +65,8 @@ func TestDoClient_GetText(t *testing.T) {
 	}{
 		{
 			"Get Text",
-			fields{&http.Client{}},
-			args{"dohttp://home.baidu.com/home/index/contact_us", nil},
+			fields{},
+			args{"http://home.baidu.com/home/index/contact_us", nil},
 			"联系我们",
 			false,
 		},
@@ -42,7 +80,7 @@ func TestDoClient_GetText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := New(30*time.Second, true, false)
+			client := New(10*time.Second, true, false)
 			gotText, err := client.GetText(tt.args.url, tt.args.headers)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DoClient.GetText() error = %v, wantErr %v", err, tt.wantErr)
@@ -73,7 +111,7 @@ func TestDoClient_GetFile(t *testing.T) {
 	}{
 		{
 			"Get File",
-			fields{&http.Client{}},
+			fields{},
 			args{"https://code.jquery.com/jquery-3.3.1.slim.min.js",
 				nil,
 				`E:/Temp/get_file.txt`,
@@ -83,19 +121,17 @@ func TestDoClient_GetFile(t *testing.T) {
 		},
 		{
 			"Get File Not Found",
-			fields{&http.Client{}},
-			args{"http://h1.ioliu.cn/bing/th?id=OHR.PolarBearDay_ZH-CN5185516722_1920x1080.jpg&rf=NorthMale_1920x1080.jpg",
+			fields{},
+			args{"https://hu60.cn/1.txt",
 				nil,
 				`E:/Temp/temp.jpg`},
 			0,
-			false,
+			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := &DoClient{
-				Client: tt.fields.Client,
-			}
+			client := New(10*time.Second, true, false)
 			gotSize, err := client.GetFile(tt.args.url, tt.args.headers, tt.args.savePath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DoClient.GetFile() error = %v, wantErr %v", err, tt.wantErr)
@@ -109,17 +145,13 @@ func TestDoClient_GetFile(t *testing.T) {
 }
 
 func TestDoClient_PostForm(t *testing.T) {
-	form := url.Values{}
-	form.Add("type", "1")
-	form.Add("name", "肖申克")
-	form.Add("pass", "1234567890")
-	form.Add("go", "登录")
+	form := "type=1&name=肖申克&pass=1234567890&go=登录"
 	type fields struct {
 		Client *http.Client
 	}
 	type args struct {
 		url     string
-		form    url.Values
+		form    string
 		headers map[string]string
 	}
 	tests := []struct {
@@ -200,9 +232,7 @@ func TestDoClient_SetProxy(t *testing.T) {
 func TestDoClient_Post(t *testing.T) {
 	client := New(10*time.Second, false, false)
 
-	form := url.Values{}
-	form.Add("reginvcode", "cb1e6c4be12e1364")
-	form.Add("action", "reginvcodeck")
+	form := "reginvcode=cb1e6c4be12e1364&action=reginvcodeck"
 
 	str, err := client.PostForm("http://fdfds1223fd.com", form, nil)
 	if err != nil {

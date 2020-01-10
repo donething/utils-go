@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,6 +20,9 @@ import (
 	"strings"
 	"time"
 )
+
+// 状态码不在200-399内
+var ErrStatusCode = errors.New("错误的状态码")
 
 // dohttp.Client的包装
 type DoClient struct {
@@ -72,62 +76,62 @@ func (client *DoClient) SetJar(jar *http.CookieJar) {
 
 // 执行请求
 // 此函数没有关闭response.Body
-func (client *DoClient) Request(req *http.Request, headers map[string]string) (res *http.Response, err error) {
+func (client *DoClient) Request(req *http.Request, headers map[string]string) (resp *http.Response, err error) {
 	//	// 填充请求头
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
 	// 执行请求
 	// 此时还不能关闭response，否则后续方法无法读取响应的内容
-	return client.Do(req)
+	resp, err = client.Do(req)
+	if err != nil {
+		return
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		err = ErrStatusCode
+	}
+	return
 }
 
-// 执行Get请求，返回http.Response的指针
-// 该函数没有关闭response.Body，需读取响应后自行关闭
-// 期后续GetText()、GetFile()等方法中，已实现关闭响应
-func (client *DoClient) Get(url string, headers map[string]string) (res *http.Response, err error) {
+// 执行Get请求
+func (client *DoClient) Get(url string, headers map[string]string) (data []byte, err error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return
 	}
-	res, err = client.Request(req, headers)
-	// 因为没有后续操作，所以此处不需判断err==nil
+	resp, err := client.Request(req, headers)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	data, err = ioutil.ReadAll(resp.Body)
 	return
 }
 
 // 读取文本类型
-func (client *DoClient) GetText(url string, headers map[string]string) (text string, err error) {
-	res, err := client.Get(url, headers)
-	if err != nil {
-		return
-	}
-	defer res.Body.Close()
-
-	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-	return string(data), nil
+func (client *DoClient) GetText(url string, headers map[string]string) (string, error) {
+	data, err := client.Get(url, headers)
+	return string(data), err
 }
 
 // 下载文件到本地
 func (client *DoClient) GetFile(url string, headers map[string]string, savePath string) (size int64, err error) {
-	res, err := client.Get(url, headers)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return
 	}
-	defer res.Body.Close()
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		err = fmt.Errorf("响应码不在正确范围（200-299）内：%s", res.Status)
+	resp, err := client.Request(req, headers)
+	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	out, err := os.Create(savePath)
 	if err != nil {
 		return
 	}
 	defer out.Close()
-	size, err = io.Copy(out, res.Body)
+	size, err = io.Copy(out, resp.Body)
 	return
 }
 
