@@ -132,7 +132,7 @@ func TestDoClient_GetFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := New(10*time.Second, true, false)
-			gotSize, err := client.DownFile(tt.args.url, tt.args.headers, tt.args.savePath)
+			gotSize, err := client.DownFile(tt.args.url, tt.args.headers, tt.args.savePath, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DoClient.DownFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -218,11 +218,8 @@ func TestDoClient_ReadTwiceResponse(t *testing.T) {
 
 func TestDoClient_SetProxy(t *testing.T) {
 	client := New(30*time.Second, false, false)
-
-	client.SetProxy("http://127.0.0.1:1080")
-
-	log.Printf("client信息：%+v\n", client.Transport)
-	text, err := client.GetText("https://api.ipify.org", nil)
+	//text, err := client.GetText("https://api.ipify.org", nil)
+	text, err := client.GetText("https://google.com", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

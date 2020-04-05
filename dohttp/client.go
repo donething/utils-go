@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/donething/utils-go/dofile"
+	"golang.org/x/net/proxy"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -22,27 +23,33 @@ import (
 	"time"
 )
 
+// dohttp.Client的包装
+type DoClient struct {
+	*http.Client
+	tr *http.Transport
+}
+type DoReq struct {
+	*http.Request
+}
+
 // 状态码不在200-399内
 var (
 	ErrStatusCode = errors.New("error status code")
 	ErrFileExists = errors.New("file already exists")
 )
 
-// dohttp.Client的包装
-type DoClient struct {
-	*http.Client
-}
-type DoReq struct {
-	*http.Request
-}
-
-// client参数
-var tr = &http.Transport{}
+const (
+	ProxyHttp   = "http"
+	ProxyHttps  = "https"
+	ProxySocks5 = "socks5"
+)
 
 // 创建新的DoClient
 func New(timeout time.Duration, needCookieJar bool, checkSSL bool) *DoClient {
 	// 根据参数，创建http.Client
 	c := &http.Client{}
+	tr := http.DefaultTransport.(*http.Transport)
+
 	// 超时时间
 	c.Timeout = timeout
 	// 需要管理Cookie
@@ -56,24 +63,31 @@ func New(timeout time.Duration, needCookieJar bool, checkSSL bool) *DoClient {
 		c.Transport = tr
 	}
 
-	return &DoClient{c}
+	return &DoClient{c, tr}
 }
 
 // 设置代理
-// proxy格式如："http://127.0.0.1:1080"
+// proxy格式如："http://127.0.0.1:1080"(http代理)或"127.0.0.1:1080"(socks5代理)
 // 若为空字符串""，则清除之前设置的代理
-func (client *DoClient) SetProxy(proxy string) {
-	if proxy == "" {
-		tr.Proxy = nil
-	} else {
-		tr.Proxy = func(_ *http.Request) (*url.URL, error) {
-			return url.Parse(proxy)
+func (client *DoClient) SetProxy(proxyStr string, proxyType string) error {
+	if proxyType == ProxyHttp || proxyType == ProxyHttps {
+		proxyURL, err := url.Parse(proxyStr)
+		if err != nil {
+			return err
 		}
+		client.tr.Proxy = http.ProxyURL(proxyURL)
+	} else if proxyType == ProxySocks5 {
+		dialer, err := proxy.SOCKS5("tcp", proxyStr, nil, proxy.Direct)
+		if err != nil {
+			return err
+		}
+		client.tr.Dial = dialer.Dial
 	}
-	client.Transport = tr
+	client.Transport = client.tr
+	return nil
 }
 
-// 设置cookie，不设置，则使用默认jar
+// 设置cookie。若不设置，则使用默认jar
 func (client *DoClient) SetJar(jar *http.CookieJar) {
 	client.Jar = *jar
 }
