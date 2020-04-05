@@ -115,11 +115,11 @@ func (client *DoClient) Request(req *http.Request, headers map[string]string) (*
 func (client *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	resp, err := client.Request(req, headers)
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
@@ -169,7 +169,7 @@ func (client *DoClient) DownFile(url string, headers map[string]string, savePath
 func (client *DoClient) post(req *http.Request, headers map[string]string) ([]byte, error) {
 	res, err := client.Request(req, headers)
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	defer res.Body.Close()
 	return ioutil.ReadAll(res.Body)
@@ -180,7 +180,7 @@ func (client *DoClient) post(req *http.Request, headers map[string]string) ([]by
 func (client *DoClient) PostForm(url string, form string, headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(form))
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	return client.post(req, headers)
@@ -190,7 +190,7 @@ func (client *DoClient) PostForm(url string, form string, headers map[string]str
 func (client *DoClient) PostJSONString(url string, jsonStr string, headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(jsonStr))
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	return client.post(req, headers)
@@ -200,7 +200,7 @@ func (client *DoClient) PostJSONString(url string, jsonStr string, headers map[s
 func (client *DoClient) PostJSONObj(url string, jsonObj interface{}, headers map[string]string) ([]byte, error) {
 	jsonBytes, err := json.Marshal(jsonObj)
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	return client.PostJSONString(url, string(jsonBytes), headers)
 }
@@ -225,13 +225,13 @@ func (client *DoClient) PostFile(url string, path string, fieldname string, othe
 	// use the bodyWriter to write the Part headers to the buffer
 	_, err := bodyWriter.CreateFormFile(fieldname, filepath.Base(path))
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 
 	// the file data will be the second part of the body
 	fh, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	defer fh.Close()
 
@@ -245,13 +245,13 @@ func (client *DoClient) PostFile(url string, path string, fieldname string, othe
 	requestReader := io.MultiReader(bodyBuf, fh, closeBuf)
 	req, err := http.NewRequest(http.MethodPost, url, requestReader)
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 
 	// Set headers for multipart, and Content Length
 	fi, err := fh.Stat()
 	if err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 	req.Header.Add("Content-Type", "multipart/form-data; boundary="+boundary)
 	req.ContentLength = fi.Size() + int64(bodyBuf.Len()) + int64(closeBuf.Len())
