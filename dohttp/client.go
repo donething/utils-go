@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/donething/utils-go/dofile"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -22,7 +23,10 @@ import (
 )
 
 // 状态码不在200-399内
-var ErrStatusCode = errors.New("错误的状态码")
+var (
+	ErrStatusCode = errors.New("error status code")
+	ErrFileExists = errors.New("file already exists")
+)
 
 // dohttp.Client的包装
 type DoClient struct {
@@ -115,6 +119,15 @@ func (client *DoClient) GetText(url string, headers map[string]string) (string, 
 
 // 下载文件到本地
 func (client *DoClient) DownFile(url string, headers map[string]string, savePath string) (int64, error) {
+	// 如果文件存在，则返回错误
+	exists, err := dofile.Exists(savePath)
+	if err != nil {
+		return 0, err
+	}
+	if exists {
+		return 0, ErrFileExists
+	}
+
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return 0, err
