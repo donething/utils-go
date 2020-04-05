@@ -118,16 +118,26 @@ func (client *DoClient) GetText(url string, headers map[string]string) (string, 
 }
 
 // 下载文件到本地
-func (client *DoClient) DownFile(url string, headers map[string]string, savePath string) (int64, error) {
+func (client *DoClient) DownFile(url string, headers map[string]string, savePath string, override bool) (int64, error) {
 	// 如果文件存在，则返回错误
-	exists, err := dofile.Exists(savePath)
+	if !override {
+		exists, err := dofile.Exists(savePath)
+		if err != nil {
+			return 0, err
+		}
+		if exists {
+			return 0, ErrFileExists
+		}
+	}
+
+	// 目标文件
+	out, err := os.Create(savePath)
 	if err != nil {
 		return 0, err
 	}
-	if exists {
-		return 0, ErrFileExists
-	}
+	defer out.Close()
 
+	// 源文件
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return 0, err
@@ -138,11 +148,6 @@ func (client *DoClient) DownFile(url string, headers map[string]string, savePath
 	}
 	defer resp.Body.Close()
 
-	out, err := os.Create(savePath)
-	if err != nil {
-		return 0, err
-	}
-	defer out.Close()
 	return io.Copy(out, resp.Body)
 }
 
