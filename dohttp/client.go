@@ -76,36 +76,35 @@ func (client *DoClient) SetJar(jar *http.CookieJar) {
 
 // 执行请求
 // 此函数没有关闭response.Body
-func (client *DoClient) Request(req *http.Request, headers map[string]string) (resp *http.Response, err error) {
+func (client *DoClient) Request(req *http.Request, headers map[string]string) (*http.Response, error) {
 	//	// 填充请求头
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
 	// 执行请求
 	// 此时还不能关闭response，否则后续方法无法读取响应的内容
-	resp, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
-		return
+		return nil, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
 		err = ErrStatusCode
 	}
-	return
+	return resp, nil
 }
 
 // 执行Get请求
-func (client *DoClient) Get(url string, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return
+		return nil, err
 	}
 	resp, err := client.Request(req, headers)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer resp.Body.Close()
-	data, err = ioutil.ReadAll(resp.Body)
-	return
+	return ioutil.ReadAll(resp.Body)
 }
 
 // 读取文本类型
@@ -115,73 +114,72 @@ func (client *DoClient) GetText(url string, headers map[string]string) (string, 
 }
 
 // 下载文件到本地
-func (client *DoClient) GetFile(url string, headers map[string]string, savePath string) (size int64, err error) {
+func (client *DoClient) DownFile(url string, headers map[string]string, savePath string) (int64, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return
+		return 0, err
 	}
 	resp, err := client.Request(req, headers)
 	if err != nil {
-		return
+		return 0, err
 	}
 	defer resp.Body.Close()
 
 	out, err := os.Create(savePath)
 	if err != nil {
-		return
+		return 0, err
 	}
 	defer out.Close()
-	size, err = io.Copy(out, resp.Body)
-	return
+	return io.Copy(out, resp.Body)
 }
 
 // Post请求
-func (client *DoClient) post(req *http.Request, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) post(req *http.Request, headers map[string]string) ([]byte, error) {
 	res, err := client.Request(req, headers)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer res.Body.Close()
-	data, err = ioutil.ReadAll(res.Body)
-	return
+	return ioutil.ReadAll(res.Body)
 }
 
 // Post表单
 // form格式:a=1&b=2
-func (client *DoClient) PostForm(url string, form string, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) PostForm(url string, form string, headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(form))
 	if err != nil {
-		return
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	return client.post(req, headers)
 }
 
 // post JSON字符串
-func (client *DoClient) PostJSONString(url string, jsonStr string, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) PostJSONString(url string, jsonStr string, headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(jsonStr))
 	if err != nil {
-		return
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	return client.post(req, headers)
 }
 
 // POST map、struct等数据结构的json字符串
-func (client *DoClient) PostJSONObj(url string, jsonObj interface{}, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) PostJSONObj(url string, jsonObj interface{}, headers map[string]string) ([]byte, error) {
 	jsonBytes, err := json.Marshal(jsonObj)
 	if err != nil {
-		return
+		return nil, err
 	}
 	return client.PostJSONString(url, string(jsonBytes), headers)
 }
 
 // Post文件
-// filename：待上传文件的路径
-// fileFormField：表单中表示上传文件的键
-// otherForm：其它表单
+// path：待上传文件的绝对路径
+// fieldname：表单中文件对应的的键名
+// otherForm：其它表单的键值
+// headers：请求头
 // https://www.golangnote.com/topic/124.html
-func (client *DoClient) PostFile(url string, filename string, fileFormField string, otherForm map[string]string, headers map[string]string) (data []byte, err error) {
+func (client *DoClient) PostFile(url string, path string, fieldname string, otherForm map[string]string, headers map[string]string) ([]byte, error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	defer bodyWriter.Close()
@@ -193,15 +191,15 @@ func (client *DoClient) PostFile(url string, filename string, fileFormField stri
 
 	// 添加文件表单值
 	// use the bodyWriter to write the Part headers to the buffer
-	_, err = bodyWriter.CreateFormFile(fileFormField, filepath.Base(filename))
+	_, err := bodyWriter.CreateFormFile(fieldname, filepath.Base(path))
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	// the file data will be the second part of the body
-	fh, err := os.Open(filename)
+	fh, err := os.Open(path)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer fh.Close()
 
@@ -215,13 +213,13 @@ func (client *DoClient) PostFile(url string, filename string, fileFormField stri
 	requestReader := io.MultiReader(bodyBuf, fh, closeBuf)
 	req, err := http.NewRequest(http.MethodPost, url, requestReader)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	// Set headers for multipart, and Content Length
 	fi, err := fh.Stat()
 	if err != nil {
-		return
+		return nil, err
 	}
 	req.Header.Add("Content-Type", "multipart/form-data; boundary="+boundary)
 	req.ContentLength = fi.Size() + int64(bodyBuf.Len()) + int64(closeBuf.Len())

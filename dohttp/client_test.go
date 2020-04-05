@@ -132,13 +132,13 @@ func TestDoClient_GetFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := New(10*time.Second, true, false)
-			gotSize, err := client.GetFile(tt.args.url, tt.args.headers, tt.args.savePath)
+			gotSize, err := client.DownFile(tt.args.url, tt.args.headers, tt.args.savePath)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DoClient.GetFile() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DoClient.DownFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if gotSize != tt.wantSize {
-				t.Errorf("DoClient.GetFile() = %v, want %v", gotSize, tt.wantSize)
+				t.Errorf("DoClient.DownFile() = %v, want %v", gotSize, tt.wantSize)
 			}
 		})
 	}

@@ -101,13 +101,13 @@ func TestPathExists(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := PathExists(tt.args.path)
+			got, err := Exists(tt.args.path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("PathExists() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Exists() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("PathExists() = %v, want %v", got, tt.want)
+				t.Errorf("Exists() = %v, want %v", got, tt.want)
 			}
 		})
 	}
