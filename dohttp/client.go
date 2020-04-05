@@ -144,14 +144,7 @@ func (client *DoClient) DownFile(url string, headers map[string]string, savePath
 		}
 	}
 
-	// 目标文件
-	out, err := os.Create(savePath)
-	if err != nil {
-		return 0, err
-	}
-	defer out.Close()
-
-	// 源文件
+	// 网络文件流
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return 0, err
@@ -161,6 +154,13 @@ func (client *DoClient) DownFile(url string, headers map[string]string, savePath
 		return 0, err
 	}
 	defer resp.Body.Close()
+
+	// 存储文件，需要放在网络连接后面，连接成功才创建新文件
+	out, err := os.Create(savePath)
+	if err != nil {
+		return 0, err
+	}
+	defer out.Close()
 
 	return io.Copy(out, resp.Body)
 }
