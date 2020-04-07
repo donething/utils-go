@@ -173,7 +173,7 @@ func TestWrite(t *testing.T) {
 	}{
 		{
 			"Test Create",
-			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_cretae.txt`, WriteCreate, 0644},
+			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_cretae.txt`, OCreate, 0644},
 			2,
 			false,
 		},

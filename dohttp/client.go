@@ -26,7 +26,7 @@ import (
 // dohttp.Client的包装
 type DoClient struct {
 	*http.Client
-	tr *http.Transport
+	Tr *http.Transport
 }
 type DoReq struct {
 	*http.Request
@@ -36,12 +36,6 @@ type DoReq struct {
 var (
 	ErrStatusCode = errors.New("error status code")
 	ErrFileExists = errors.New("file already exists")
-)
-
-const (
-	ProxyHttp   = "http"
-	ProxyHttps  = "https"
-	ProxySocks5 = "socks5"
 )
 
 // 创建新的DoClient
@@ -67,23 +61,27 @@ func New(timeout time.Duration, needCookieJar bool, checkSSL bool) *DoClient {
 }
 
 // 设置代理
-// proxy格式如："http://127.0.0.1:1080"(http代理)或"127.0.0.1:1080"(socks5代理)
+// proxyStr 代理，格式如下：
+// http代理：http://127.0.0.1:1080
+// https代理：https://127.0.0.1:1080
+// socks5代理：socks5://127.0.0.1:1080
 // 若为空字符串""，则清除之前设置的代理
-func (client *DoClient) SetProxy(proxyStr string, proxyType string) error {
-	if proxyType == ProxyHttp || proxyType == ProxyHttps {
+func (client *DoClient) SetProxy(proxyStr string) error {
+	if strings.Index(proxyStr, "http") == 0 {
 		proxyURL, err := url.Parse(proxyStr)
 		if err != nil {
 			return err
 		}
-		client.tr.Proxy = http.ProxyURL(proxyURL)
-	} else if proxyType == ProxySocks5 {
-		dialer, err := proxy.SOCKS5("tcp", proxyStr, nil, proxy.Direct)
+		client.Tr.Proxy = http.ProxyURL(proxyURL)
+	} else if strings.Index(proxyStr, "socks5") == 0 {
+		ipport := proxyStr[strings.Index(proxyStr, "//")+2:]
+		dialer, err := proxy.SOCKS5("tcp", ipport, nil, proxy.Direct)
 		if err != nil {
 			return err
 		}
-		client.tr.Dial = dialer.Dial
+		client.Tr.Dial = dialer.Dial
 	}
-	client.Transport = client.tr
+	client.Transport = client.Tr
 	return nil
 }
 

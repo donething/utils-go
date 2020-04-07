@@ -24,9 +24,12 @@ type fileMagicNum struct {
 }
 
 const (
-	WriteCreate = os.O_CREATE
-	WriteAppend = os.O_CREATE | os.O_APPEND
-	WriteTrunc  = os.O_CREATE | os.O_TRUNC
+	// 若不存在则创建，只写模式
+	OCreate = os.O_CREATE | os.O_WRONLY
+	// 追加，不存在则先创建文件，只写
+	OAppend = os.O_APPEND | os.O_CREATE | os.O_WRONLY
+	// 覆盖或新建，只写模式
+	OTrunc = os.O_TRUNC | os.O_CREATE | os.O_WRONLY
 )
 
 // 读取文件
