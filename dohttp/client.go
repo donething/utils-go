@@ -106,7 +106,7 @@ func (client *DoClient) Request(req *http.Request, headers map[string]string) (*
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
 		err = ErrStatusCode
 	}
-	return resp, nil
+	return resp, err
 }
 
 // 执行Get请求
