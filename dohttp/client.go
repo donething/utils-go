@@ -256,3 +256,8 @@ func CheckNetworkConn() bool {
 	defer conn.Close() // 因为需要关闭连接，所有不能直接返回：return err!=nil
 	return true
 }
+
+// 检测响应码是否在200-399间
+func CheckCode(code int) bool {
+	return code >= 200 && code < 400
+}
