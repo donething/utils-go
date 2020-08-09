@@ -36,7 +36,7 @@ func TestDoClient_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := New(10*time.Second, true, false)
-			gotData, err := client.Get(tt.args.url, tt.args.headers)
+			gotData, _, err := client.Get(tt.args.url, tt.args.headers)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DoClient.Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -81,7 +81,7 @@ func TestDoClient_GetText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := New(10*time.Second, true, false)
-			gotText, err := client.GetText(tt.args.url, tt.args.headers)
+			gotText, _, err := client.GetText(tt.args.url, tt.args.headers)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DoClient.GetText() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -103,20 +103,18 @@ func TestDoClient_GetFile(t *testing.T) {
 		savePath string
 	}
 	tests := []struct {
-		name     string
-		fields   fields
-		args     args
-		wantSize int64
-		wantErr  bool
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
 	}{
 		{
 			"Get File",
 			fields{},
 			args{"https://code.jquery.com/jquery-3.3.1.slim.min.js",
 				nil,
-				`E:/Temp/get_file.txt`,
+				`D:/Temp/get_file.txt`,
 			},
-			69917,
 			false,
 		},
 		{
@@ -124,21 +122,18 @@ func TestDoClient_GetFile(t *testing.T) {
 			fields{},
 			args{"https://hu60.cn/1.txt",
 				nil,
-				`E:/Temp/temp.jpg`},
-			0,
+				`D:/Temp/hu60.txt`},
 			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := New(10*time.Second, true, false)
-			gotSize, err := client.DownFile(tt.args.url, tt.args.headers, tt.args.savePath, true)
-			if (err != nil) != tt.wantErr {
+			_, code, err := client.DownFile(tt.args.url, tt.args.savePath, true, tt.args.headers)
+			//t.Log(tt.name, "响应信息", n, code, err)
+			if (err != nil || code < 200 || code >= 400) != tt.wantErr {
 				t.Errorf("DoClient.DownFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if gotSize != tt.wantSize {
-				t.Errorf("DoClient.DownFile() = %v, want %v", gotSize, tt.wantSize)
 			}
 		})
 	}
@@ -175,7 +170,7 @@ func TestDoClient_PostForm(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := New(30*time.Second, true, false)
-			gotData, err := client.PostForm(tt.args.url, tt.args.form, tt.args.headers)
+			gotData, _, err := client.PostForm(tt.args.url, tt.args.form, tt.args.headers)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DoClient.PostForm() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -207,7 +202,7 @@ func TestDoClient_Form_JSON(t *testing.T) {
 
 func TestDoClient_ReadTwiceResponse(t *testing.T) {
 	client := New(30*time.Second, false, false)
-	text, err := client.GetText("https://cililianbt.com/search/搜索/0/0/1.html", nil)
+	text, _, err := client.GetText("https://cililianbt.com/search/搜索/0/0/1.html", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +214,7 @@ func TestDoClient_ReadTwiceResponse(t *testing.T) {
 func TestDoClient_SetProxy(t *testing.T) {
 	client := New(30*time.Second, false, false)
 	//text, err := client.GetText("https://api.ipify.org", nil)
-	text, err := client.GetText("https://google.com", nil)
+	text, _, err := client.GetText("https://google.com", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +226,7 @@ func TestDoClient_Post(t *testing.T) {
 
 	form := "reginvcode=cb1e6c4be12e1364&action=reginvcodeck"
 
-	str, err := client.PostForm("http://fdfds1223fd.com", form, nil)
+	str, _, err := client.PostForm("http://fdfds1223fd.com", form, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +255,7 @@ func TestDoClient_PostFile(t *testing.T) {
 	otherForm := map[string]string{
 		"file_id": "0",
 	}
-	data, err := client.PostFile(
+	data, _, err := client.PostFile(
 		"https://sm.ms/api/upload?inajax=1&ssl=1",
 		"D:/Users/Doneth/Pictures/BaiduShurufa_2018-12-23_19-40-45.png",
 		"smfile",
