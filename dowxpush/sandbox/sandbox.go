@@ -22,7 +22,7 @@ type WXSendbox struct {
 // 创建微信测试号推送的实例
 func NewSandbox(appID string, appSecret string) (wx WXSendbox, err error) {
 	wx.client = dohttp.New(60*time.Second, false, false)
-	tokenText, err := wx.client.GetText(fmt.Sprintf(pushTokenURL, appID, appSecret), nil)
+	tokenText, _, err := wx.client.GetText(fmt.Sprintf(pushTokenURL, appID, appSecret), nil)
 	if err != nil {
 		return
 	}
@@ -48,7 +48,7 @@ func (wx *WXSendbox) PushTpl(pushMsg entity.PushMsg) (resp entity.PushResp, err 
 	}
 	jsonText := string(bs)
 	// 推送消息
-	bs, err = wx.client.PostJSONString(wx.pushURL, jsonText, nil)
+	bs, _, err = wx.client.PostJSONString(wx.pushURL, jsonText, nil)
 	if err != nil {
 		return
 	}
