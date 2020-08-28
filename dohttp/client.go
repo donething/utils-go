@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-var errFileExist = errors.New("file is exist")
+var ErrFileExist = errors.New("file is exist")
 
 // dohttp.Client的包装
 type DoClient struct {
@@ -124,7 +124,7 @@ func (client *DoClient) GetText(url string, headers map[string]string) (string, 
 func (client *DoClient) DownFile(url string, savePath string, override bool, headers map[string]string) (int64, int, error) {
 	exist, err := dofile.Exists(savePath)
 	if exist && !override {
-		return 0, 0, errFileExist
+		return 0, 0, ErrFileExist
 	}
 	// 网络文件流
 	req, err := http.NewRequest(http.MethodGet, url, nil)
