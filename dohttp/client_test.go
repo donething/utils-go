@@ -3,7 +3,6 @@ package dohttp
 import (
 	"errors"
 	"log"
-	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,6 +12,18 @@ import (
 // 妖火cookie中的sid，如下格式
 var yaohuoSid = "31ACC5CBFF8DDAD20_9_32370_56_700100"
 var client = New(60*time.Second, true, false)
+
+func TestProxy(t *testing.T) {
+	err := client.SetProxy("http://127.0.0.1:8888", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text, err := client.GetText("https://google.com", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Println(text)
+}
 
 func TestGetText(t *testing.T) {
 	type args struct {
@@ -196,9 +207,6 @@ func Test_statuscode(t *testing.T) {
 }
 
 func TestDoClient_Download(t *testing.T) {
-	type fields struct {
-		Client *http.Client
-	}
 	type args struct {
 		url      string
 		savePath string
