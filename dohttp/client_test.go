@@ -1,287 +1,204 @@
 package dohttp
 
 import (
-	"encoding/json"
+	"errors"
 	"log"
-	"net/http"
-	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 )
 
-func TestDoClient_Get(t *testing.T) {
-	type fields struct {
-		Client *http.Client
-	}
+// 妖火cookie中的sid，如下格式
+var yaohuoSid = "31A*****0-0-0"
+var client = New(60*time.Second, true, false)
+
+func TestGetText(t *testing.T) {
 	type args struct {
 		url     string
 		headers map[string]string
-	}
-	tests := []struct {
-		name     string
-		fields   fields
-		args     args
-		wantData []byte
-		wantErr  bool
-	}{
-		{
-			name:     "Test1",
-			fields:   fields{},
-			args:     args{url: "https://www.v2ex.com", headers: nil},
-			wantData: []byte("DOCTYPE"),
-			wantErr:  false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			client := New(10*time.Second, true, false)
-			gotData, _, err := client.Get(tt.args.url, tt.args.headers)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DoClient.Get() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !strings.Contains(string(gotData), "DOCTYPE") {
-				t.Errorf("DoClient.Get() = %v, want %v", gotData, tt.wantData)
-			}
-		})
-	}
-}
-
-func TestDoClient_GetText(t *testing.T) {
-	type fields struct {
-		Client *http.Client
-	}
-	type args struct {
-		url     string
-		headers map[string]string
-	}
-	tests := []struct {
-		name     string
-		fields   fields
-		args     args
-		wantText string
-		wantErr  bool
-	}{
-		{
-			"Get Text",
-			fields{},
-			args{"http://home.baidu.com/home/index/contact_us", nil},
-			"联系我们",
-			false,
-		},
-		{
-			"TimeOut",
-			fields{},
-			args{"https://google.com", nil},
-			"",
-			true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			client := New(10*time.Second, true, false)
-			gotText, _, err := client.GetText(tt.args.url, tt.args.headers)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DoClient.GetText() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !strings.Contains(gotText, tt.wantText) {
-				t.Errorf("DoClient.GetText() = %v, want %v", gotText, tt.wantText)
-			}
-		})
-	}
-}
-
-func TestDoClient_GetFile(t *testing.T) {
-	type fields struct {
-		Client *http.Client
-	}
-	type args struct {
-		url      string
-		headers  map[string]string
-		savePath string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
+		want    string
 		wantErr bool
 	}{
 		{
-			"Get File",
-			fields{},
-			args{"https://code.jquery.com/jquery-3.3.1.slim.min.js",
-				nil,
-				`D:/Temp/get_file.txt`,
+			name: "正确获取内容",
+			args: args{
+				url:     "https://www.v2ex.com/api/members/show.json?id=1",
+				headers: nil,
 			},
-			false,
+			want:    "{\"username\": \"Livid\", \"website\": \"https://livid.v2ex.com/\", \"github\": \"\", \"psn\": \"\", \"avatar_normal\": \"https://cdn.v2ex.com/avatar/c4ca/4238/1_mini.png?m=1583753654\", \"bio\": \"Remember the bigger green\", \"url\": \"https://www.v2ex.com/u/Livid\", \"tagline\": \"Gravitated and spellbound\", \"twitter\": \"\", \"created\": 1272203146, \"status\": \"found\", \"avatar_large\": \"https://cdn.v2ex.com/avatar/c4ca/4238/1_mini.png?m=1583753654\", \"avatar_mini\": \"https://cdn.v2ex.com/avatar/c4ca/4238/1_mini.png?m=1583753654\", \"location\": \"\", \"btc\": \"\", \"id\": 1}",
+			wantErr: false,
 		},
 		{
-			"Get File Not Found",
-			fields{},
-			args{"https://hu60.cn/1.txt",
-				nil,
-				`D:/Temp/hu60.txt`},
-			true,
+			name: "401错误",
+			args: args{
+				url:     "https://gg.doio.xyz/",
+				headers: nil,
+			},
+			want:    "401",
+			wantErr: true,
+		},
+		{
+			name: "访问被ban网站",
+			args: args{
+				url:     "https://google.com",
+				headers: nil,
+			},
+			want:    "google",
+			wantErr: false,
+		},
+		{
+			name: "带header请求",
+			args: args{
+				url:     "https://yaohuo.me/bbs-426174.html",
+				headers: map[string]string{"Cookie": "sidyaohuo=" + yaohuoSid},
+			},
+			want:    "我也在找呜呜",
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := New(10*time.Second, true, false)
-			_, code, err := client.DownFile(tt.args.url, tt.args.savePath, true, tt.args.headers)
-			//t.Log(tt.name, "响应信息", n, code, err)
-			if (err != nil || code < 200 || code >= 400) != tt.wantErr {
-				t.Errorf("DoClient.DownFile() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := client.GetText(tt.args.url, tt.args.headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetText() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+			if !strings.Contains(got, tt.want) {
+				t.Errorf("GetText() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDoClient_PostForm(t *testing.T) {
-	form := "type=1&name=肖申克&pass=1234567890&go=登录"
-	type fields struct {
-		Client *http.Client
+func TestDownload(t *testing.T) {
+	n, err := client.Download("https://code.jquery.com/jquery-1.12.4.min.js",
+		"D:/Temp/jquery-1.12.4.min.js", false, nil)
+	if err != nil {
+		t.Errorf(err.Error())
 	}
+	log.Printf("下载完成：%d\n", n)
+}
+
+func TestPostForm(t *testing.T) {
 	type args struct {
 		url     string
 		form    string
 		headers map[string]string
 	}
 	tests := []struct {
-		name     string
-		fields   fields
-		args     args
-		wantData []byte
-		wantErr  bool
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
 	}{
 		{
-			name:   "post Form",
-			fields: fields{},
-			args: args{"https://hu60.net/q.php/user.login.html?u=index.index.html",
-				form,
-				nil,
+			name: "带header的post form",
+			args: args{
+				url:     "https://yaohuo.me/bbs/book_re.aspx",
+				form:    "face=&sendmsg=0&content=%E7%9C%8B%E7%9C%8B%E6%8A%8A&action=add&id=426174&siteid=1000&lpage=1&classid=213&g=%E5%BF%AB%E9%80%9F%E5%9B%9E%E5%A4%8D&sid=" + yaohuoSid,
+				headers: map[string]string{"Cookie": "sidyaohuo=" + yaohuoSid},
 			},
-			wantData: []byte("抱歉，用户未激活"),
-			wantErr:  false,
+			want:    []byte("回复成功"),
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := New(30*time.Second, true, false)
-			gotData, _, err := client.PostForm(tt.args.url, tt.args.form, tt.args.headers)
+			got, err := client.PostForm(tt.args.url, tt.args.form, tt.args.headers)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DoClient.PostForm() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("PostForm() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !strings.Contains(string(gotData), string(tt.wantData)) {
-				t.Errorf("DoClient.PostForm() = %v, want %v", string(gotData), string(tt.wantData))
+			if !strings.Contains(string(got), string(tt.want)) {
+				t.Errorf("PostForm() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDoClient_Form_JSON(t *testing.T) {
-	form := url.Values{}
-	form.Add("k1", "v1")
-	form.Add("k2", "v2")
-	form.Add("k3", "v3")
-	t.Log("form:", form.Encode())
-
-	jsonMap := map[string]string{}
-	jsonMap["k1"] = "k1"
-	jsonMap["k2"] = "k2"
-	jsonMap["k2"] = "k3"
-	bs, err := json.Marshal(jsonMap)
-	if err != nil {
-		log.Fatal(err)
+func TestPostJSONObj(t *testing.T) {
+	type args struct {
+		url     string
+		jsonObj interface{}
+		headers map[string]string
 	}
-	t.Log("jsonMap:", string(bs))
-}
-
-func TestDoClient_ReadTwiceResponse(t *testing.T) {
-	client := New(30*time.Second, false, false)
-	text, _, err := client.GetText("https://cililianbt.com/search/搜索/0/0/1.html", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(text, "磁力链") {
-		t.Error("出错")
-	}
-}
-
-func TestDoClient_SetProxy(t *testing.T) {
-	client := New(30*time.Second, false, false)
-	//text, err := client.GetText("https://api.ipify.org", nil)
-	text, _, err := client.GetText("https://google.com", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	log.Println(text)
-}
-
-func TestDoClient_Post(t *testing.T) {
-	client := New(10*time.Second, false, false)
-
-	form := "reginvcode=cb1e6c4be12e1364&action=reginvcodeck"
-
-	str, _, err := client.PostForm("http://fdfds1223fd.com", form, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(str)
-}
-
-func TestDoClient_PostTest(t *testing.T) {
-	req, err := http.NewRequest(http.MethodPost, "http://fdfds1223fd.com", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
-
-	t.Log(res.Body)
-}
-
-func TestDoClient_PostFile(t *testing.T) {
-	client := New(30*time.Second, false, false)
-	otherForm := map[string]string{
-		"file_id": "0",
-	}
-	data, _, err := client.PostFile(
-		"https://sm.ms/api/upload?inajax=1&ssl=1",
-		"D:/Users/Doneth/Pictures/BaiduShurufa_2018-12-23_19-40-45.png",
-		"smfile",
-		otherForm,
-		nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(string(data))
-}
-
-func TestCheckNetworkConn(t *testing.T) {
 	tests := []struct {
-		name string
-		want bool
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
 	}{
 		{
-			"Test Conn",
-			true,
+			name: "",
+			args: args{
+				url:     "",
+				jsonObj: "",
+				headers: nil,
+			},
+			want:    []byte(""),
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CheckNetworkConn(); got != tt.want {
-				t.Errorf("CheckNetworkConn() = %v, want %v", got, tt.want)
+			got, err := client.PostJSONObj(tt.args.url, tt.args.jsonObj, tt.args.headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PostJSONObj() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("PostJSONObj() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
+}
+
+func TestPostFile(t *testing.T) {
+	type args struct {
+		url       string
+		path      string
+		fieldname string
+		otherForm map[string]string
+		headers   map[string]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "上传文件",
+			args: args{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := client.PostFile(tt.args.url, tt.args.path, tt.args.fieldname, tt.args.otherForm, tt.args.headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PostFile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("PostFile() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_statuscode(t *testing.T) {
+	text, err := client.GetText("https://gg.doio.xyz/", nil)
+	if err != nil {
+		if errors.Is(err, ErrStatusCode) {
+			log.Println("已匹配到状态码错误", err)
+			return
+		}
+		t.Fatal(err.Error(), text)
+	}
+	log.Println("文本", text)
 }

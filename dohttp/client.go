@@ -9,37 +9,30 @@ import (
 	"errors"
 	"fmt"
 	"github.com/donething/utils-go/dofile"
-	"golang.org/x/net/proxy"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
-var ErrFileExist = errors.New("file is exist")
+var (
+	ErrFileExists = errors.New("file already exist")
+	ErrStatusCode = errors.New("incorrect network status code")
+)
 
-// dohttp.Client的包装
 type DoClient struct {
 	*http.Client
-	Tr *http.Transport
-}
-type DoReq struct {
-	*http.Request
 }
 
-// 创建新的DoClient
-func New(timeout time.Duration, needCookieJar bool, checkSSL bool) *DoClient {
-	// 根据参数，创建http.Client
-	c := &http.Client{}
-	tr := http.DefaultTransport.(*http.Transport)
-
+// 初始化
+func New(timeout time.Duration, needCookieJar bool, checkSSL bool) DoClient {
+	c := &http.Client{Transport: http.DefaultTransport.(*http.Transport)}
 	// 超时时间
 	c.Timeout = timeout
 	// 需要管理Cookie
@@ -49,143 +42,126 @@ func New(timeout time.Duration, needCookieJar bool, checkSSL bool) *DoClient {
 	}
 	// 不需要检查SSL
 	if !checkSSL {
-		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-		c.Transport = tr
+		// 圆括号内为类型断言
+		c.Transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
-
-	return &DoClient{c, tr}
-}
-
-// 设置代理
-// proxyStr 代理，格式如下：
-// http代理：http://127.0.0.1:1080
-// https代理：https://127.0.0.1:1080
-// socks5代理：socks5://127.0.0.1:1080
-// 若为空字符串""，则清除之前设置的代理
-func (client *DoClient) SetProxy(proxyStr string) error {
-	if strings.Index(proxyStr, "http") == 0 {
-		proxyURL, err := url.Parse(proxyStr)
-		if err != nil {
-			return err
-		}
-		client.Tr.Proxy = http.ProxyURL(proxyURL)
-	} else if strings.Index(proxyStr, "socks5") == 0 {
-		ipport := proxyStr[strings.Index(proxyStr, "//")+2:]
-		dialer, err := proxy.SOCKS5("tcp", ipport, nil, proxy.Direct)
-		if err != nil {
-			return err
-		}
-		client.Tr.Dial = dialer.Dial
-	}
-	client.Transport = client.Tr
-	return nil
-}
-
-// 设置cookie。若不设置，则使用默认jar
-func (client *DoClient) SetJar(jar *http.CookieJar) {
-	client.Jar = *jar
+	return DoClient{c}
 }
 
 // 执行请求
 // 此函数没有关闭response.Body
-func (client *DoClient) Request(req *http.Request, headers map[string]string) (*http.Response, error) {
+func (c *DoClient) Exec(req *http.Request, headers map[string]string) (*http.Response, error) {
 	//	// 填充请求头
 	for key, value := range headers {
-		req.Header.Add(key, value)
+		req.Header.Set(key, value)
 	}
 	// 执行请求
 	// 此时还不能关闭response，否则后续方法无法读取响应的内容
-	return client.Do(req)
+	return c.Do(req)
 }
 
 // 执行Get请求
-func (client *DoClient) Get(url string, headers map[string]string) ([]byte, int, error) {
+func (c *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
+	// 生成请求
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
-	resp, err := client.Request(req, headers)
+	// 执行请求
+	resp, err := c.Exec(req, headers)
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
 	defer resp.Body.Close()
+	// 读取响应内容
 	bs, err := ioutil.ReadAll(resp.Body)
-	return bs, resp.StatusCode, err
+	if err != nil {
+		return nil, err
+	}
+	// 判断状态码，如果不在200-399间，就返回读取的响应内容和ErrStatusCode error
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		return bs, fmt.Errorf("%w %d", ErrStatusCode, resp.StatusCode)
+	}
+	return bs, nil
 }
 
 // 读取文本类型
-func (client *DoClient) GetText(url string, headers map[string]string) (string, int, error) {
-	data, statusCode, err := client.Get(url, headers)
-	return string(data), statusCode, err
+func (c *DoClient) GetText(url string, headers map[string]string) (string, error) {
+	bs, err := c.Get(url, headers)
+	return string(bs), err
 }
 
 // 下载文件到本地
 // 并非一次读取、下载到内存，所以不用考虑网络上文件的大小
-func (client *DoClient) DownFile(url string, savePath string, override bool, headers map[string]string) (int64, int, error) {
+func (c *DoClient) Download(url string, savePath string, override bool,
+	headers map[string]string) (int64, error) {
 	exist, err := dofile.Exists(savePath)
 	if exist && !override {
-		return 0, 0, ErrFileExist
+		return 0, ErrFileExists
 	}
 	// 网络文件流
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
-	resp, err := client.Request(req, headers)
+	resp, err := c.Exec(req, headers)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 	defer resp.Body.Close()
 
 	// 存储文件，需要放在网络连接后面，连接成功才创建新文件
 	out, err := os.OpenFile(savePath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return 0, resp.StatusCode, err
+		return 0, err
 	}
 	defer out.Close()
 	n, err := io.Copy(out, resp.Body)
-	return n, resp.StatusCode, err
+	return n, err
 }
 
 // Post请求
-func (client *DoClient) post(req *http.Request, headers map[string]string) ([]byte, int, error) {
-	resp, err := client.Request(req, headers)
+func (c *DoClient) post(req *http.Request, headers map[string]string) ([]byte, error) {
+	resp, err := c.Exec(req, headers)
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	n, err := ioutil.ReadAll(resp.Body)
-	return n, resp.StatusCode, err
+	return n, err
 }
 
 // Post表单
 // form格式:a=1&b=2
-func (client *DoClient) PostForm(url string, form string, headers map[string]string) ([]byte, int, error) {
+func (c *DoClient) PostForm(url string, form string,
+	headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(form))
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	return client.post(req, headers)
+	return c.post(req, headers)
 }
 
 // post JSON字符串
-func (client *DoClient) PostJSONString(url string, jsonStr string, headers map[string]string) ([]byte, int, error) {
+func (c *DoClient) PostJSONString(url string, jsonStr string,
+	headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(jsonStr))
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return client.post(req, headers)
+	return c.post(req, headers)
 }
 
 // POST map、struct等数据结构的json字符串
-func (client *DoClient) PostJSONObj(url string, jsonObj interface{}, headers map[string]string) ([]byte, int, error) {
+func (c *DoClient) PostJSONObj(url string, jsonObj interface{},
+	headers map[string]string) ([]byte, error) {
 	jsonBytes, err := json.Marshal(jsonObj)
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
-	return client.PostJSONString(url, string(jsonBytes), headers)
+	return c.PostJSONString(url, string(jsonBytes), headers)
 }
 
 // Post文件
@@ -194,8 +170,8 @@ func (client *DoClient) PostJSONObj(url string, jsonObj interface{}, headers map
 // otherForm：其它表单的键值
 // headers：请求头
 // https://www.golangnote.com/topic/124.html
-func (client *DoClient) PostFile(url string, path string, fieldname string,
-	otherForm map[string]string, headers map[string]string) ([]byte, int, error) {
+func (c *DoClient) PostFile(url string, path string, fieldname string,
+	otherForm map[string]string, headers map[string]string) ([]byte, error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	defer bodyWriter.Close()
@@ -209,13 +185,13 @@ func (client *DoClient) PostFile(url string, path string, fieldname string,
 	// use the bodyWriter to write the Part headers to the buffer
 	_, err := bodyWriter.CreateFormFile(fieldname, filepath.Base(path))
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
 
 	// the file data will be the second part of the body
 	fh, err := os.Open(path)
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
 	defer fh.Close()
 
@@ -229,24 +205,24 @@ func (client *DoClient) PostFile(url string, path string, fieldname string,
 	requestReader := io.MultiReader(bodyBuf, fh, closeBuf)
 	req, err := http.NewRequest(http.MethodPost, url, requestReader)
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
 
 	// Set headers for multipart, and Content Length
 	fi, err := fh.Stat()
 	if err != nil {
-		return []byte{}, 0, err
+		return nil, err
 	}
-	req.Header.Add("Content-Type", "multipart/form-data; boundary="+boundary)
+	req.Header.Set("Content-Type", "multipart/form-data; boundary="+boundary)
 	req.ContentLength = fi.Size() + int64(bodyBuf.Len()) + int64(closeBuf.Len())
 
-	return client.post(req, headers)
+	return c.post(req, headers)
 }
 
 // 检测网络是否可用
 // 参考：https://stackoverflow.com/a/42227115
 func CheckNetworkConn() bool {
-	timeout := 3 * time.Second
+	timeout := 30 * time.Second
 	// 需要使用：ip:port 的格式
 	// 此处使用百度搜索的IP和端口：123.125.115.110:80
 	conn, err := net.DialTimeout("tcp", "123.125.115.110:80", timeout)
