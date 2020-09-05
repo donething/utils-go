@@ -3,6 +3,7 @@ package dohttp
 import (
 	"errors"
 	"log"
+	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -10,7 +11,7 @@ import (
 )
 
 // 妖火cookie中的sid，如下格式
-var yaohuoSid = "31A*****0-0-0"
+var yaohuoSid = "31ACC5CBFF8DDAD20_9_32370_56_700100"
 var client = New(60*time.Second, true, false)
 
 func TestGetText(t *testing.T) {
@@ -73,15 +74,6 @@ func TestGetText(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestDownload(t *testing.T) {
-	n, err := client.Download("https://code.jquery.com/jquery-1.12.4.min.js",
-		"D:/Temp/jquery-1.12.4.min.js", false, nil)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	log.Printf("下载完成：%d\n", n)
 }
 
 func TestPostForm(t *testing.T) {
@@ -201,4 +193,58 @@ func Test_statuscode(t *testing.T) {
 		t.Fatal(err.Error(), text)
 	}
 	log.Println("文本", text)
+}
+
+func TestDoClient_Download(t *testing.T) {
+	type fields struct {
+		Client *http.Client
+	}
+	type args struct {
+		url      string
+		savePath string
+		override bool
+		headers  map[string]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		{
+			name: "正确下载文件",
+			args: args{
+				url:      "https://code.jquery.com/jquery-1.12.4.min.js",
+				savePath: "D:/Temp/jquery-1.12.4.min.js",
+				override: false,
+				headers:  nil,
+			},
+			want:    97163,
+			wantErr: false,
+		},
+		{
+			name: "正确下载文件",
+			args: args{
+				url:      "https://code.jquery.com/t.txt",
+				savePath: "D:/Temp/t.txt",
+				override: false,
+				headers:  nil,
+			},
+			want:    162,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := client
+			got, err := c.Download(tt.args.url, tt.args.savePath, tt.args.override, tt.args.headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Download() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

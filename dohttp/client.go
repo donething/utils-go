@@ -61,6 +61,7 @@ func (c *DoClient) Exec(req *http.Request, headers map[string]string) (*http.Res
 }
 
 // 执行Get请求
+// 如果状态码不在200-399间，会返回ErrStatusCode error
 func (c *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
 	// 生成请求
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -92,6 +93,8 @@ func (c *DoClient) GetText(url string, headers map[string]string) (string, error
 }
 
 // 下载文件到本地
+// 如果本地存在此文件，且override参数为false，会返回ErrFileExists error
+// 如果状态码不在200-399间，即使将文件保存到了本地，也会返回ErrStatusCode error
 // 并非一次读取、下载到内存，所以不用考虑网络上文件的大小
 func (c *DoClient) Download(url string, savePath string, override bool,
 	headers map[string]string) (int64, error) {
@@ -117,7 +120,14 @@ func (c *DoClient) Download(url string, savePath string, override bool,
 	}
 	defer out.Close()
 	n, err := io.Copy(out, resp.Body)
-	return n, err
+	if err != nil {
+		return 0, err
+	}
+	// 判断状态码，如果不在200-399间，依然返回ErrStatusCode error
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		return n, fmt.Errorf("%w %d", ErrStatusCode, resp.StatusCode)
+	}
+	return n, nil
 }
 
 // Post请求
@@ -127,8 +137,15 @@ func (c *DoClient) post(req *http.Request, headers map[string]string) ([]byte, e
 		return nil, err
 	}
 	defer resp.Body.Close()
-	n, err := ioutil.ReadAll(resp.Body)
-	return n, err
+	bs, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	// 判断状态码，如果不在200-399间，就返回读取的响应内容和ErrStatusCode error
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		return bs, fmt.Errorf("%w %d", ErrStatusCode, resp.StatusCode)
+	}
+	return bs, nil
 }
 
 // Post表单
