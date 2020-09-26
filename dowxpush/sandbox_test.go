@@ -17,7 +17,7 @@ func TestSandbox_getToken(t *testing.T) {
 }
 
 func TestSandbox_PushTpl(t *testing.T) {
-	payload := sandbox.genGeneralTpl("测试标题", "测试消息内容", time.Now().String())
+	payload := sandbox.GenGeneralTpl("测试标题", "测试消息内容", time.Now().String())
 	err := sandbox.PushTpl("xxx", "xxx", payload, "")
 	if err != nil {
 		log.Fatal(err)

@@ -63,7 +63,7 @@ func (s *Sandbox) getToken() error {
 }
 
 // 推送模板消息
-// payload 可以使用 genGeneralTpl() 快速生成
+// payload 可以使用 GenGeneralTpl() 快速生成
 // url 如果是有效链接，那么点击消息将会打开该链接
 func (s *Sandbox) PushTpl(toUID string, tplID string, payload *map[string]interface{}, url string) error {
 	// 获取、更新 token
@@ -94,7 +94,7 @@ func (s *Sandbox) PushTpl(toUID string, tplID string, payload *map[string]interf
 }
 
 // 生成通用消息模板
-func (s *Sandbox) genGeneralTpl(title string, msg string, time string) *map[string]interface{} {
+func (s *Sandbox) GenGeneralTpl(title string, msg string, time string) *map[string]interface{} {
 	return &map[string]interface{}{
 		"title": map[string]string{"value": title + "\n"},
 		"msg":   map[string]string{"value": msg + "\n\n"},
