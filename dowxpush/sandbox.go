@@ -25,9 +25,9 @@ type Sandbox struct {
 }
 
 // 获取 Sandbox 实例，以推送消息
-func NewSandbox(appid string, secret string) Sandbox {
+func NewSandbox(appid string, secret string) *Sandbox {
 	client := dohttp.New(30*time.Second, false, false)
-	return Sandbox{appid: appid, secret: secret, token: "", expires: time.Now(), client: &client}
+	return &Sandbox{appid: appid, secret: secret, token: "", expires: time.Now(), client: &client}
 }
 
 // 获取 token
