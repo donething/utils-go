@@ -66,6 +66,13 @@ func FormatDate(t time.Time, format string) string {
 	return t.Format(format)
 }
 
+// 将当前时间转为北京时间
+func BeiJingTime(t time.Time) time.Time {
+	// 东八区
+	var cstZone = time.FixedZone("GMT", 8*3600)
+	return t.UTC().In(cstZone)
+}
+
 // base64编码
 func Base64Encode(str string) string {
 	// https://stackoverflow.com/a/28672789/8179418

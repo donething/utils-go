@@ -1,6 +1,7 @@
 package dostr
 
 import (
+	"log"
 	"testing"
 	"time"
 )
@@ -51,4 +52,10 @@ func TestFormatDate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBeiJingTime(t *testing.T) {
+	bj := BeiJingTime(time.Now())
+	log.Println(bj.String())
+	log.Println("北京时间", FormatDate(bj, TimeFormatDefault))
 }
