@@ -1,4 +1,4 @@
-package dostr
+package dotext
 
 import (
 	"log"

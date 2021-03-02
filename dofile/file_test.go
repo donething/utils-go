@@ -1,8 +1,6 @@
 package dofile
 
 import (
-	"encoding/hex"
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -113,14 +111,6 @@ func TestPathExists(t *testing.T) {
 	}
 }
 
-func TestCheckIntegrity(t *testing.T) {
-	result, err := CheckIntegrity("E:/Temp/20190226_PolarBearDay_ZH-CN5185516722_1920x1080.jpg")
-	if err != nil {
-		t.Fatal(err)
-	}
-	log.Println(result)
-}
-
 func TestRead(t *testing.T) {
 	type args struct {
 		path string
@@ -179,13 +169,13 @@ func TestWrite(t *testing.T) {
 		},
 		{
 			"Test Append",
-			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_append.txt`, WriteAppend, 0644},
+			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_append.txt`, OAppend, 0644},
 			2,
 			false,
 		},
 		{
 			"Test Trunc",
-			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_trunc.txt`, WriteTrunc, 0644},
+			args{[]byte{54, 55}, `E:/Temp/go/utils-go/dofile/test_trunc.txt`, OTrunc, 0644},
 			2,
 			false,
 		},
@@ -217,12 +207,4 @@ func TestCopyFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log("文件复制完成：", n)
-}
-
-func TestReadHeadTailBytes(t *testing.T) {
-	n1, n2, err := ReadHeadTailBytes("D:/Users/Doneth/Downloads/006Yjd8ogy1g0zvj6ny49g304604oe1g.gif", 0, 2)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("%s,%s\n", hex.EncodeToString(n1), hex.EncodeToString(n2))
 }

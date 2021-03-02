@@ -3,7 +3,6 @@ package dofile
 import (
 	"bytes"
 	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,16 +11,6 @@ import (
 	"runtime"
 	"strings"
 )
-
-// 文件的魔术数字的信息
-type fileMagicNum struct {
-	// 需要读取文件头尾的字节数
-	nHead int64
-	nTail int64
-	// 文件头尾必须等于该十六进制字符串，该字符串为大写
-	headMust string
-	tailMust string
-}
 
 const (
 	// 若不存在则创建，只写模式
@@ -140,90 +129,6 @@ func Md5(path string) (string, error) {
 	m5 := md5hash.Sum(nil)
 	md5Str := fmt.Sprintf("%x", m5)
 	return md5Str, nil
-}
-
-// 文件完整性检测
-func CheckIntegrity(path string) (bool, error) {
-	// 判断目标是否存在，不存在则返回错误
-	exist, err := Exists(path)
-	if err != nil {
-		return false, err
-	}
-	if !exist {
-		return false, fmt.Errorf("目标不存在")
-	}
-	// 判断目标是否为目录，为目录则返回错误
-	isdir, err := isDir(path)
-	if err != nil {
-		return false, err
-	}
-	if isdir {
-		return false, fmt.Errorf("目标为目录")
-	}
-
-	// 开始验证文件
-	suffix := path[strings.LastIndex(path, "."):] // 文件后缀（包括点号"."）
-
-	magicNum, err := getMagicNum(suffix)
-	if err != nil {
-		return false, err
-	}
-
-	headBytes, tailBytes, err := ReadHeadTailBytes(path, magicNum.nHead, magicNum.nTail)
-	head := hex.EncodeToString(headBytes)
-	tail := hex.EncodeToString(tailBytes)
-
-	// 文件类型的魔术数字可以为空字符串""，此时判为符合
-	if (magicNum.headMust == "" || strings.ToUpper(head) == magicNum.headMust) &&
-		(magicNum.tailMust == "" || strings.ToUpper(tail) == magicNum.tailMust) {
-		return true, nil
-	}
-	return false, nil
-}
-
-// 读取文件头尾的几个字节
-func ReadHeadTailBytes(path string, n1 int64, n2 int64) ([]byte, []byte, error) {
-	// 打开目标文件
-	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer file.Close()
-
-	// 读取文件头n字节内容
-	startBytes := make([]byte, n1)
-	_, err = file.Read(startBytes)
-	if err != nil && err != io.EOF {
-		return nil, nil, err
-	}
-
-	// 读取文件尾n字节内容
-	_, err = file.Seek(-1*n2, io.SeekEnd)
-	if err != nil {
-		return nil, nil, err
-	}
-	endBytes := make([]byte, n2)
-	_, err = file.Read(endBytes)
-	if err != nil && err != io.EOF {
-		return nil, nil, err
-	}
-
-	return startBytes, endBytes, nil
-}
-
-// 获取魔术数字
-// 文件头标志：https://www.cnblogs.com/WangAoBo/p/6366211.html
-func getMagicNum(suffix string) (fileMagicNum, error) {
-	switch strings.ToLower(suffix) {
-	case ".jpg", ".jpeg":
-		return fileMagicNum{4, 2, "FFD8FFE0", "FFD9"}, nil
-	case ".png":
-		return fileMagicNum{4, 4, "89504E47", "AE426082"}, nil
-	case ".gif":
-		return fileMagicNum{4, 4, "47494638", ""}, nil
-	default:
-		return fileMagicNum{}, fmt.Errorf("未知的文件格式：%s", suffix)
-	}
 }
 
 // 根据文件类型，选择合适的程序打开文件

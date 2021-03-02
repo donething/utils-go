@@ -1,4 +1,4 @@
-package dostr
+package dotext
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	// 转换时间的默认格式
 	TimeFormatDefault = "2006-01-02 15:04:05"
 )
 
