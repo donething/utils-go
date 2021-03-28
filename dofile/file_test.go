@@ -208,3 +208,24 @@ func TestCopyFile(t *testing.T) {
 	}
 	t.Log("文件复制完成：", n)
 }
+
+func TestValidFileName1(t *testing.T) {
+	type args struct {
+		src  string
+		repl string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"test1", args{`query|User\Info《Seven`, ""}, "queryUserInfo《Seven"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ValidFileName(tt.args.src, tt.args.repl); got != tt.want {
+				t.Errorf("ValidFileName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

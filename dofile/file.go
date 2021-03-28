@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -173,4 +174,11 @@ func ShowInExplorer(path string) error {
 		return fmt.Errorf("err: %s,stderr: %s,strout: %s", err.Error(), stderr.String(), out.String())
 	}
 	return nil
+}
+
+// 合法化文件名
+// 去除Windows下不能作为文件名的字符：<>:"/\|?*
+func ValidFileName(src string, repl string) string {
+	var reg = regexp.MustCompile(`[<>:"/\\|?*]`)
+	return reg.ReplaceAllString(src, repl)
 }
