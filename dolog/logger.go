@@ -1,6 +1,15 @@
 // 初始化日志记录器
-// Info, Warn, Error = doLog.InitLog(path, doLog.DefaultFormat)
 // 参考：https://www.jianshu.com/p/a9427a4e2ada
+// 用法：
+//var (
+//  Info  *log.Logger
+//  Warn  *log.Logger
+//  Error *log.Logger
+//)
+//const LogName = "run.log"
+//func init() {
+//  Info, Warn, Error = dolog.InitLog(LogName, dolog.DefaultFormat)
+//}
 package dolog
 
 import (
