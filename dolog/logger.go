@@ -1,5 +1,6 @@
 // 初始化日志记录器
-// Info, Warn, Error := doLog.InitLog(path, doLog.DefaultFormat)
+// Info, Warn, Error = doLog.InitLog(path, doLog.DefaultFormat)
+// 参考：https://www.jianshu.com/p/a9427a4e2ada
 package dolog
 
 import (
