@@ -271,10 +271,10 @@ func (c *DoClient) PostFile(url string, path string, fieldname string,
 // 检测网络是否可用
 // 参考：https://stackoverflow.com/a/42227115
 func CheckNetworkConn() bool {
-	timeout := 30 * time.Second
+	timeout := 10 * time.Second
 	// 需要使用：ip:port 的格式
-	// 此处使用百度搜索的IP和端口：123.125.115.110:80
-	conn, err := net.DialTimeout("tcp", "123.125.115.110:80", timeout)
+	// 此处使用百度搜索的IP和端口：baidu.com:80
+	conn, err := net.DialTimeout("tcp", "baidu.com:80", timeout)
 	if err != nil {
 		return false
 	}
