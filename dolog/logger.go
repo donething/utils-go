@@ -1,6 +1,6 @@
 // 初始化日志记录器
 // 参考：https://www.jianshu.com/p/a9427a4e2ada
-// 用法：
+// 用法，初始化：创建 logger go文件后：
 //var (
 //  Info  *log.Logger
 //  Warn  *log.Logger
@@ -10,6 +10,8 @@
 //func init() {
 //  Info, Warn, Error = dolog.InitLog(LogName, dolog.DefaultFormat)
 //}
+// 使用：logger.Info.Printf("创建配置文件：%s\n", confPath)
+
 package dolog
 
 import (
