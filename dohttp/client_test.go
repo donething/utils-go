@@ -11,10 +11,10 @@ import (
 
 // 妖火cookie中的sid，如下格式
 var yaohuoSid = ""
-var client = New(60*time.Second, true, false)
+var client = New(10*time.Second, true, false)
 
 func TestProxy(t *testing.T) {
-	err := client.SetProxy("socks5://127.0.0.1:1081")
+	err := client.SetProxy("socks5://127.0.0.1:1080")
 	if err != nil {
 		t.Fatal(err)
 	}
