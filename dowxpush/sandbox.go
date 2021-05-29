@@ -1,4 +1,4 @@
-// 微信测试号消息推送
+// Package dowxpush 微信测试号消息推送
 package dowxpush
 
 import (
@@ -15,7 +15,7 @@ const (
 	pushURL = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=%s"
 )
 
-// 微信测试号的数据
+// Sandbox 微信测试号的数据
 type Sandbox struct {
 	appid   string           // 测试号的 appid
 	secret  string           // 测试号的 secret
@@ -24,7 +24,7 @@ type Sandbox struct {
 	client  *dohttp.DoClient // 执行 http 请求
 }
 
-// 获取 Sandbox 实例，以推送消息
+// NewSandbox 获取 Sandbox 实例，以推送消息
 func NewSandbox(appid string, secret string) *Sandbox {
 	client := dohttp.New(30*time.Second, false, false)
 	return &Sandbox{appid: appid, secret: secret, token: "", expires: time.Now(), client: &client}
@@ -62,8 +62,10 @@ func (s *Sandbox) getToken() error {
 	return nil
 }
 
-// 推送模板消息
+// PushTpl 推送模板消息
+//
 // payload 可以使用 GenGeneralTpl() 快速生成
+//
 // url 如果是有效链接，那么点击消息将会打开该链接
 func (s *Sandbox) PushTpl(toUID string, tplID string, payload *map[string]interface{}, url string) error {
 	// 获取、更新 token
@@ -84,7 +86,7 @@ func (s *Sandbox) PushTpl(toUID string, tplID string, payload *map[string]interf
 	var result PushResult
 	err = json.Unmarshal(bs, &result)
 	if err != nil {
-		return fmt.Errorf("解析推送结果的 json 时出错：%w", err)
+		return fmt.Errorf("解析推送响应 JSON 文本时出错：%w", err)
 	}
 	if result.Errcode != 0 {
 		return fmt.Errorf("推送时出错：%s", string(bs))
@@ -93,7 +95,7 @@ func (s *Sandbox) PushTpl(toUID string, tplID string, payload *map[string]interf
 	return nil
 }
 
-// 生成通用消息模板
+// GenGeneralTpl 生成通用消息模板
 func (s *Sandbox) GenGeneralTpl(title string, msg string, time string) *map[string]interface{} {
 	return &map[string]interface{}{
 		"title": map[string]string{"value": title + "\n"},

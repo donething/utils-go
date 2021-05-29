@@ -1,4 +1,4 @@
-// 对http.Client的包装
+// Package dohttp 对 http.Client 的包装
 // 使用dohttp.New()创建新的客户端
 package dohttp
 
@@ -26,8 +26,11 @@ import (
 
 // errors
 var (
-	ErrFileExists  = errors.New("file already exist")
-	ErrStatusCode  = errors.New("incorrect network status code")
+	// ErrFileExists 文件已存在
+	ErrFileExists = errors.New("file already exist")
+	// ErrStatusCode 网络响应代码不在 200-299 之间
+	ErrStatusCode = errors.New("incorrect network status code")
+	// ErrProxyString 网络代理错误
 	ErrProxyString = errors.New("unknown proxy string")
 )
 
@@ -35,8 +38,11 @@ type DoClient struct {
 	*http.Client
 }
 
-// 设置代理
-// http://127.0.0.1:1081、socks5://172.0.0.1:1080等
+// SetProxy 设置代理
+//
+// 参数 proxyStr string 代理地址，如 http://127.0.0.1:1081 socks5://127.0.0.1:1080 等
+//
+// 参数 auth *proxy.Auth 代理的用户名、密码，可空
 func (c *DoClient) SetProxy(proxyStr string, auth *proxy.Auth) error {
 	proxyStr = strings.ToLower(strings.TrimSpace(proxyStr))
 	if strings.Index(proxyStr, "http") == 0 {
@@ -62,7 +68,7 @@ func (c *DoClient) SetProxy(proxyStr string, auth *proxy.Auth) error {
 	return ErrProxyString
 }
 
-// 初始化
+// New 初始化
 func New(timeout time.Duration, needCookieJar bool, checkSSL bool) DoClient {
 	c := &http.Client{Transport: http.DefaultTransport}
 	// 超时时间
@@ -80,8 +86,9 @@ func New(timeout time.Duration, needCookieJar bool, checkSSL bool) DoClient {
 	return DoClient{c}
 }
 
-// 执行请求
-// 此函数没有关闭response.Body
+// Exec 执行请求
+//
+// 此函数没有关闭 response.Body
 func (c *DoClient) Exec(req *http.Request, headers map[string]string) (*http.Response, error) {
 	//	// 填充请求头
 	for key, value := range headers {
@@ -92,8 +99,8 @@ func (c *DoClient) Exec(req *http.Request, headers map[string]string) (*http.Res
 	return c.Do(req)
 }
 
-// 执行Get请求
-// 如果状态码不在200-399间，会返回ErrStatusCode error
+// Get 执行Get请求
+// 如果状态码不在 200-299 之间，会返回错误 ErrStatusCode
 func (c *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
 	// 生成请求
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -111,22 +118,25 @@ func (c *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 判断状态码，如果不在200-399间，就返回读取的响应内容和ErrStatusCode error
-	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+	// 判断状态码，如果不在 200-299 之间，就返回读取的响应内容和错误 ErrStatusCode
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return bs, fmt.Errorf("%w %d", ErrStatusCode, resp.StatusCode)
 	}
 	return bs, nil
 }
 
-// 读取文本类型
+// GetText 读取文本类型
 func (c *DoClient) GetText(url string, headers map[string]string) (string, error) {
 	bs, err := c.Get(url, headers)
 	return string(bs), err
 }
 
-// 下载文件到本地
-// 如果本地存在此文件，且override参数为false，会返回ErrFileExists error
-// 如果状态码不在200-399间，即使将文件保存到了本地，也会返回ErrStatusCode error
+// Download 下载文件到本地
+//
+// 如果本地存在此文件，且 override 参数为 false，会返回错误 ErrFileExists
+//
+// 如果状态码不在 200-299 之间，即使将文件保存到了本地，也会返回错误 ErrStatusCode
+//
 // 并非一次读取、下载到内存，所以不用考虑网络上文件的大小
 func (c *DoClient) Download(url string, savePath string, override bool,
 	headers map[string]string) (int64, error) {
@@ -155,14 +165,14 @@ func (c *DoClient) Download(url string, savePath string, override bool,
 	if err != nil {
 		return 0, err
 	}
-	// 判断状态码，如果不在200-399间，依然返回ErrStatusCode error
-	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+	// 判断状态码，如果不在200-299间，依然返回ErrStatusCode error
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return n, fmt.Errorf("%w %d", ErrStatusCode, resp.StatusCode)
 	}
 	return n, nil
 }
 
-// Post请求
+// POST 请求
 func (c *DoClient) post(req *http.Request, headers map[string]string) ([]byte, error) {
 	resp, err := c.Exec(req, headers)
 	if err != nil {
@@ -173,15 +183,15 @@ func (c *DoClient) post(req *http.Request, headers map[string]string) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	// 判断状态码，如果不在200-399间，就返回读取的响应内容和ErrStatusCode error
-	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+	// 判断状态码，如果不在200-299 之间，就返回读取的响应内容和ErrStatusCode error
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return bs, fmt.Errorf("%w %d", ErrStatusCode, resp.StatusCode)
 	}
 	return bs, nil
 }
 
-// Post表单
-// form格式:a=1&b=2
+// PostForm POST 表单
+// form 格式 a=1&b=2
 func (c *DoClient) PostForm(url string, form string,
 	headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(form))
@@ -192,7 +202,7 @@ func (c *DoClient) PostForm(url string, form string,
 	return c.post(req, headers)
 }
 
-// post JSON字符串
+// PostJSONString POST JSON 字符串
 func (c *DoClient) PostJSONString(url string, jsonStr string,
 	headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(jsonStr))
@@ -203,7 +213,7 @@ func (c *DoClient) PostJSONString(url string, jsonStr string,
 	return c.post(req, headers)
 }
 
-// POST map、struct等数据结构的json字符串
+// PostJSONObj POST map、struct 等数据结构的 JSON 字符串
 func (c *DoClient) PostJSONObj(url string, jsonObj interface{},
 	headers map[string]string) ([]byte, error) {
 	jsonBytes, err := json.Marshal(jsonObj)
@@ -213,12 +223,17 @@ func (c *DoClient) PostJSONObj(url string, jsonObj interface{},
 	return c.PostJSONString(url, string(jsonBytes), headers)
 }
 
-// Post文件
+// PostFile POST 文件
+//
 // path：待上传文件的绝对路径
+//
 // fieldname：表单中文件对应的的键名
+//
 // otherForm：其它表单的键值
+//
 // headers：请求头
-// https://www.golangnote.com/topic/124.html
+//
+// 参考 https://www.golangnote.com/topic/124.html
 func (c *DoClient) PostFile(url string, path string, fieldname string,
 	otherForm map[string]string, headers map[string]string) ([]byte, error) {
 	bodyBuf := &bytes.Buffer{}
@@ -246,7 +261,7 @@ func (c *DoClient) PostFile(url string, path string, fieldname string,
 
 	// need to know the boundary to properly close the part myself.
 	boundary := bodyWriter.Boundary()
-	//close_string := fmt.Sprintf("\r\n--%s--\r\n", boundary)
+	// close_string := fmt.Sprintf("\r\n--%s--\r\n", boundary)
 	closeBuf := bytes.NewBufferString(fmt.Sprintf("\r\n--%s--\r\n", boundary))
 
 	// use multi-reader to defer the reading of the file data until
@@ -268,8 +283,8 @@ func (c *DoClient) PostFile(url string, path string, fieldname string,
 	return c.post(req, headers)
 }
 
-// 检测网络是否可用
-// 参考：https://stackoverflow.com/a/42227115
+// CheckNetworkConn 检测网络是否可用
+// 参考 https://stackoverflow.com/a/42227115
 func CheckNetworkConn() bool {
 	timeout := 10 * time.Second
 	// 需要使用：ip:port 的格式
@@ -282,7 +297,16 @@ func CheckNetworkConn() bool {
 	return true
 }
 
-// 检测响应码是否在200-399间
+// CheckCode 检测响应码是否在 200-299 之间
 func CheckCode(code int) bool {
-	return code >= 200 && code < 400
+	return code >= 200 && code <= 299
+}
+
+// LocalAddr 返回本机的局域网络地址
+func LocalAddr() (string, error) {
+	conn, err := net.Dial("ip:icmp", "google.com")
+	if err != nil {
+		return "", nil
+	}
+	return conn.LocalAddr().String(), nil
 }

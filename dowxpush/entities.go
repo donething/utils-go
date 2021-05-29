@@ -8,7 +8,7 @@ type tokenResult struct {
 	Errmsg      string `json:"errmsg"`
 }
 
-// 推送完消息的结果
+// PushResult 推送消息的响应
 type PushResult struct {
 	Errcode int    `json:"errcode"`
 	Errmsg  string `json:"errmsg"`

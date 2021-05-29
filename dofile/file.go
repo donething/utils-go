@@ -14,15 +14,15 @@ import (
 )
 
 const (
-	// 若不存在则创建，只写模式
+	// OCreate 若不存在则创建，只写模式
 	OCreate = os.O_CREATE | os.O_WRONLY
-	// 追加，不存在则先创建文件，只写
+	// OAppend 追加，不存在则先创建文件，只写
 	OAppend = os.O_APPEND | os.O_CREATE | os.O_WRONLY
-	// 覆盖或新建，只写模式
+	// OTrunc 覆盖或新建，只写模式
 	OTrunc = os.O_TRUNC | os.O_CREATE | os.O_WRONLY
 )
 
-// 读取文件
+// Read 读取文件
 func Read(path string) ([]byte, error) {
 	fi, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
@@ -32,7 +32,7 @@ func Read(path string) ([]byte, error) {
 	return ioutil.ReadAll(fi)
 }
 
-// 向文件写内容
+// Write 向文件写内容
 func Write(bs []byte, path string, mode int, perm os.FileMode) (int, error) {
 	fi, err := os.OpenFile(path, mode, perm)
 	if err != nil {
@@ -42,10 +42,13 @@ func Write(bs []byte, path string, mode int, perm os.FileMode) (int, error) {
 	return fi.Write(bs)
 }
 
-// 复制文件
-// 返回值n表示复制的字节数
-// 参考：https://opensource.com/article/18/6/copying-files-go
-// 更详细的的实现，可参考：https://stackoverflow.com/a/21067803
+// CopyFile 复制文件
+//
+// 返回值 n 表示复制的字节数
+//
+// 参考 https://opensource.com/article/18/6/copying-files-go
+//
+// 更详细的的实现，可参考 https://stackoverflow.com/a/21067803
 func CopyFile(src string, dst string, override bool) (int64, error) {
 	// 目标文件是否存在
 	exist, err := Exists(dst)
@@ -81,8 +84,9 @@ func CopyFile(src string, dst string, override bool) (int64, error) {
 	return nBytes, err
 }
 
-// 判断路径是否存在
-// 参考：https://blog.csdn.net/xielingyun/article/details/49992455
+// Exists 判断路径是否存在
+//
+// 参考 https://blog.csdn.net/xielingyun/article/details/49992455
 func Exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	// 如果返回的错误为nil,说明文件或文件夹存在
@@ -96,9 +100,10 @@ func Exists(path string) (bool, error) {
 	return false, err
 }
 
-// 判断是否为目录
-// 参考：https://www.reddit.com/r/golang/comments/2fjwyk/isdir_in_go
-func isDir(path string) (bool, error) {
+// IsDir 判断是否为目录
+//
+// 参考 https://www.reddit.com/r/golang/comments/2fjwyk/isdir_in_go
+func IsDir(path string) (bool, error) {
 	fi, err := os.Stat(path)
 	if err != nil {
 		return false, err
@@ -106,9 +111,9 @@ func isDir(path string) (bool, error) {
 	return fi.IsDir(), nil
 }
 
-// 返回文件MD5值
+// Md5 返回文件MD5值
 func Md5(path string) (string, error) {
-	isdir, err := isDir(path)
+	isdir, err := IsDir(path)
 	if err != nil {
 		return "", err
 	}
@@ -132,8 +137,9 @@ func Md5(path string) (string, error) {
 	return md5Str, nil
 }
 
-// 根据文件类型，选择合适的程序打开文件
-// 来源：https://gist.github.com/hyg/9c4afcd91fe24316cbf0
+// OpenAs 根据文件类型，选择合适的程序打开文件
+//
+// 来源 https://gist.github.com/hyg/9c4afcd91fe24316cbf0
 func OpenAs(url string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
@@ -151,7 +157,7 @@ func OpenAs(url string) error {
 	return err
 }
 
-// 在资源管理器中显示文件
+// ShowInExplorer 在资源管理器中显示文件
 func ShowInExplorer(path string) error {
 	var cmd *exec.Cmd
 	// 使用explorer显示文件
@@ -176,7 +182,8 @@ func ShowInExplorer(path string) error {
 	return nil
 }
 
-// 合法化文件名
+// ValidFileName 合法化文件名
+//
 // 去除Windows下不能作为文件名的字符：<>:"/\|?*
 func ValidFileName(src string, repl string) string {
 	var reg = regexp.MustCompile(`[<>:"/\\|?*]`)

@@ -19,10 +19,13 @@ var ctx *oto.Context
 // 参考：https://github.com/hajimehoshi/go-mp3/issues/28#issuecomment-523265030
 var once sync.Once
 
-// 播放音频
-// 参数audio: 音频文件的字节码
-// 参数channelNum: 单声道（1）或立体声（2）
-// 参数bitDepthInBytes: 只能选择1或2，大多数情况为2
+// PlayAudio 播放音频
+//
+// 参数 audio: 音频文件的字节码
+//
+// 参数 channelNum: 单声道（1）或立体声（2）
+//
+// 参数 bitDepthInBytes: 只能选择1或2，大多数情况为2
 func PlayAudio(audio []byte, channelNum int, bitDepthInBytes int, bufferSizeInBytes int) (err error) {
 	d, err := mp3.NewDecoder(ioutil.NopCloser(bytes.NewReader(audio)))
 	if err != nil {
