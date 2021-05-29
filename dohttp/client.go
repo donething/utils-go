@@ -4,13 +4,11 @@ package dohttp
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/donething/utils-go/dofile"
-	"golang.org/x/net/proxy"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -24,14 +22,19 @@ import (
 	"time"
 )
 
+const (
+	// ProxySocks5 socks5 代理的格式
+	ProxySocks5 = "socks5://127.0.0.1:1080"
+	// ProxyHttp http 代理的格式
+	ProxyHttp = "http://127.0.0.1:1081"
+)
+
 // errors
 var (
 	// ErrFileExists 文件已存在
 	ErrFileExists = errors.New("file already exist")
 	// ErrStatusCode 网络响应代码不在 200-299 之间
 	ErrStatusCode = errors.New("incorrect network status code")
-	// ErrProxyString 网络代理错误
-	ErrProxyString = errors.New("unknown proxy string")
 )
 
 type DoClient struct {
@@ -43,29 +46,13 @@ type DoClient struct {
 // 参数 proxyStr string 代理地址，如 http://127.0.0.1:1081 socks5://127.0.0.1:1080 等
 //
 // 参数 auth *proxy.Auth 代理的用户名、密码，可空
-func (c *DoClient) SetProxy(proxyStr string, auth *proxy.Auth) error {
-	proxyStr = strings.ToLower(strings.TrimSpace(proxyStr))
-	if strings.Index(proxyStr, "http") == 0 {
-		proxyUrl, err := url.Parse(proxyStr)
-		if err != nil {
-			return err
-		}
-		c.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyUrl)
-		return nil
-	} else if strings.Index(proxyStr, "socks5") == 0 {
-		// 只取后面的 127.0.0.1:1080
-		addr := proxyStr[strings.LastIndex(proxyStr, "/")+1:]
-		dialer, err := proxy.SOCKS5("tcp", addr, auth, proxy.Direct)
-		if err != nil {
-			return err
-		}
-		dialContext := func(ctx context.Context, network, address string) (net.Conn, error) {
-			return dialer.Dial(network, address)
-		}
-		c.Transport.(*http.Transport).DialContext = dialContext
-		return nil
+func (c *DoClient) SetProxy(proxyStr string) error {
+	proxyUrl, err := url.Parse(proxyStr)
+	if err != nil {
+		return err
 	}
-	return ErrProxyString
+	c.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyUrl)
+	return nil
 }
 
 // New 初始化
