@@ -11,6 +11,7 @@ import (
 	"github.com/donething/utils-go/dofile"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -33,8 +34,6 @@ const (
 var (
 	// ErrFileExists 文件已存在
 	ErrFileExists = errors.New("file already exist")
-	// ErrStatusCode 网络响应代码不在 200-299 之间
-	ErrStatusCode = errors.New("incorrect network status code")
 )
 
 type DoClient struct {
@@ -87,7 +86,6 @@ func (c *DoClient) Exec(req *http.Request, headers map[string]string) (*http.Res
 }
 
 // Get 执行Get请求
-// 如果状态码不在 200-299 之间，会返回错误 ErrStatusCode
 func (c *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
 	// 生成请求
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -102,14 +100,7 @@ func (c *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
 	defer resp.Body.Close()
 	// 读取响应内容
 	bs, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	// 判断状态码，如果不在 200-299 之间，就返回读取的响应内容和错误 ErrStatusCode
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return bs, fmt.Errorf("%w %d", ErrStatusCode, resp.StatusCode)
-	}
-	return bs, nil
+	return bs, err
 }
 
 // GetText 读取文本类型
@@ -121,8 +112,6 @@ func (c *DoClient) GetText(url string, headers map[string]string) (string, error
 // Download 下载文件到本地
 //
 // 如果本地存在此文件，且 override 参数为 false，会返回错误 ErrFileExists
-//
-// 如果状态码不在 200-299 之间，即使将文件保存到了本地，也会返回错误 ErrStatusCode
 //
 // 并非一次读取、下载到内存，所以不用考虑网络上文件的大小
 func (c *DoClient) Download(url string, savePath string, override bool,
@@ -149,14 +138,7 @@ func (c *DoClient) Download(url string, savePath string, override bool,
 	}
 	defer out.Close()
 	n, err := io.Copy(out, resp.Body)
-	if err != nil {
-		return 0, err
-	}
-	// 判断状态码，如果不在200-299间，依然返回ErrStatusCode error
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return n, fmt.Errorf("%w %d", ErrStatusCode, resp.StatusCode)
-	}
-	return n, nil
+	return n, err
 }
 
 // POST 请求
@@ -167,20 +149,12 @@ func (c *DoClient) post(req *http.Request, headers map[string]string) ([]byte, e
 	}
 	defer resp.Body.Close()
 	bs, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	// 判断状态码，如果不在200-299 之间，就返回读取的响应内容和ErrStatusCode error
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return bs, fmt.Errorf("%w %d", ErrStatusCode, resp.StatusCode)
-	}
-	return bs, nil
+	return bs, err
 }
 
 // PostForm POST 表单
 // form 格式 a=1&b=2
-func (c *DoClient) PostForm(url string, form string,
-	headers map[string]string) ([]byte, error) {
+func (c *DoClient) PostForm(url string, form string, headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(form))
 	if err != nil {
 		return nil, err
@@ -210,62 +184,75 @@ func (c *DoClient) PostJSONObj(url string, jsonObj interface{},
 	return c.PostJSONString(url, string(jsonBytes), headers)
 }
 
-// PostFile POST 文件
+// PostFiles POST 文件
 //
-// path：待上传文件的绝对路径
+// files：待上传文件的列表，为 文件表单名、文件绝对路径或文件的二进制数据数组 的键值对
 //
-// fieldname：表单中文件对应的的键名
-//
-// otherForm：其它表单的键值
+// form：其它表单的键值对
 //
 // headers：请求头
 //
 // 参考 https://www.golangnote.com/topic/124.html
-func (c *DoClient) PostFile(url string, path string, fieldname string,
-	otherForm map[string]string, headers map[string]string) ([]byte, error) {
+func (c *DoClient) PostFiles(url string, files map[string]interface{}, form map[string]string,
+	headers map[string]string) ([]byte, error) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	defer bodyWriter.Close()
 
+	// need to know the boundary to properly close the part myself.
+	boundary := bodyWriter.Boundary()
+	boundaryCloseStr := fmt.Sprintf("\r\n--%s--\r\n", boundary)
+
 	// 添加其它表单值
-	for k, v := range otherForm {
+	for k, v := range form {
 		_ = bodyWriter.WriteField(k, v)
 	}
 
 	// 添加文件表单值
-	// use the bodyWriter to write the Part headers to the buffer
-	_, err := bodyWriter.CreateFormFile(fieldname, filepath.Base(path))
+	for field, data := range files {
+		// 当文件为路径时，获取文件名；没有文件名时伪随机生成文件名
+		var filename string
+		if path, ok := data.(string); ok {
+			filename = filepath.Base(path)
+		}
+		if strings.TrimSpace(filename) == "" {
+			filename = fmt.Sprintf("%d_%d.jpg", time.Now().UnixNano(), rand.Intn(1000))
+		}
+
+		// 创建当前文件的表单
+		fw, err := bodyWriter.CreateFormFile(field, filename)
+		if err != nil {
+			return nil, err
+		}
+
+		// 判断表单中的文件是路径，还是二进制数组数据
+		if path, ok := data.(string); ok {
+			// 文件为路径，提供文件输入流（用于上传）
+			fh, err := os.Open(path)
+			if err != nil {
+				return nil, err
+			}
+			if _, err = io.Copy(fw, fh); err != nil {
+				return nil, err
+			}
+			fh.Close()
+		} else if bs, ok := data.([]byte); ok {
+			// 文件为二进制数组数据
+			fw.Write(bs)
+		}
+	}
+
+	// 所有附件的数据发送写入完毕后，写入表单终结符（级分隔符后多加"--"）
+	bodyBuf.Write([]byte(boundaryCloseStr))
+
+	// 发送请求
+	req, err := http.NewRequest(http.MethodPost, url, bodyBuf)
 	if err != nil {
 		return nil, err
 	}
 
-	// the file data will be the second part of the body
-	fh, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer fh.Close()
-
-	// need to know the boundary to properly close the part myself.
-	boundary := bodyWriter.Boundary()
-	// close_string := fmt.Sprintf("\r\n--%s--\r\n", boundary)
-	closeBuf := bytes.NewBufferString(fmt.Sprintf("\r\n--%s--\r\n", boundary))
-
-	// use multi-reader to defer the reading of the file data until
-	// writing to the socket buffer.
-	requestReader := io.MultiReader(bodyBuf, fh, closeBuf)
-	req, err := http.NewRequest(http.MethodPost, url, requestReader)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set headers for multipart, and Content Length
-	fi, err := fh.Stat()
-	if err != nil {
-		return nil, err
-	}
+	// Set headers for multipart, and Content
 	req.Header.Set("Content-Type", "multipart/form-data; boundary="+boundary)
-	req.ContentLength = fi.Size() + int64(bodyBuf.Len()) + int64(closeBuf.Len())
 
 	return c.post(req, headers)
 }

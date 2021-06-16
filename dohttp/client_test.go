@@ -1,7 +1,6 @@
 package dohttp
 
 import (
-	"errors"
 	"log"
 	"reflect"
 	"strings"
@@ -101,46 +100,32 @@ func TestPostJSONObj(t *testing.T) {
 }
 
 func TestPostFile(t *testing.T) {
-	type args struct {
-		url       string
-		path      string
-		fieldname string
-		otherForm map[string]string
-		headers   map[string]string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []byte
-		wantErr bool
-	}{
-		{
-			name: "上传文件",
-			args: args{},
+	// 发送本地文件
+	client.PostFiles("http://127.0.0.1:10000/test/upload",
+		map[string]interface{}{"bili.txt": "D:/哔哩哔哩收藏的视频.txt", "guan.txt": "D:/官解.txt",
+			"pp.mp3": "D:/Timon & Pumbaa_ Stand By Me (Song) (320  kbps).mp3",
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := client.PostFile(tt.args.url, tt.args.path, tt.args.fieldname,
-				tt.args.otherForm, tt.args.headers)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("PostFile() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("PostFile() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
+		map[string]string{"p1": "p111", "p2": "p2222"},
+		nil,
+	)
+
+	// 发送远程文件
+	bs1, _ := client.Get("https://cdn.v2ex.com/gravatar/4598134cecabd98904511e065adca226?s=48&d=retro",
+		nil)
+	bs2, _ := client.Get("https://cdn.v2ex.com/gravatar/ff349a0ec97ea9e36b5aab456a38dbf2?s=48&d=retro",
+		nil)
+	client.PostFiles("http://127.0.0.1:10000/test/upload", map[string]interface{}{
+		"11": bs1,
+		"22": bs2,
+	}, map[string]string{
+		"test1": "test111",
+		"test2": "test222",
+	}, nil)
 }
 
 func Test_statuscode(t *testing.T) {
-	text, err := client.GetText("https://gg.doio.xyz/", nil)
+	text, err := client.GetText("https://abc.xyz/", nil)
 	if err != nil {
-		if errors.Is(err, ErrStatusCode) {
-			log.Println("已匹配到状态码错误", err)
-			return
-		}
 		t.Fatal(err.Error(), text)
 	}
 	log.Println("文本", text)
