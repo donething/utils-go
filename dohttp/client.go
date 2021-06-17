@@ -1,5 +1,4 @@
-// Package dohttp 对 http.Client 的包装
-// 使用dohttp.New()创建新的客户端
+// Package dohttp 使用 dohttp.New() 创建新的客户端
 package dohttp
 
 import (
@@ -36,29 +35,20 @@ var (
 	ErrFileExists = errors.New("file already exist")
 )
 
+// DoClient 为 *http.Client 的包装
 type DoClient struct {
 	*http.Client
 }
 
-// SetProxy 设置代理
-//
-// 参数 proxyStr string 代理地址，如 http://127.0.0.1:1081 socks5://127.0.0.1:1080 等
-//
-// 参数 auth *proxy.Auth 代理的用户名、密码，可空
-func (c *DoClient) SetProxy(proxyStr string) error {
-	proxyUrl, err := url.Parse(proxyStr)
-	if err != nil {
-		return err
-	}
-	c.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyUrl)
-	return nil
-}
-
-// New 初始化
+// New 初始化 DoClient
 func New(timeout time.Duration, needCookieJar bool, checkSSL bool) DoClient {
 	c := &http.Client{Transport: http.DefaultTransport}
 	// 超时时间
-	c.Timeout = timeout
+	c.Transport.(*http.Transport).DialContext = (&net.Dialer{
+		Timeout:   timeout,
+		KeepAlive: 30 * time.Second,
+	}).DialContext
+
 	// 需要管理Cookie
 	if needCookieJar {
 		cookieJar, _ := cookiejar.New(nil)
@@ -70,6 +60,20 @@ func New(timeout time.Duration, needCookieJar bool, checkSSL bool) DoClient {
 		c.Transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 	return DoClient{c}
+}
+
+// SetProxy 设置代理
+//
+// 参数 proxyStr string 代理地址，如"http://127.0.0.1:1081"、"socks5://127.0.0.1:1080"等
+//
+// 参数 auth *proxy.Auth 代理的用户名、密码，可空
+func (c *DoClient) SetProxy(proxyStr string) error {
+	proxyUrl, err := url.Parse(proxyStr)
+	if err != nil {
+		return err
+	}
+	c.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyUrl)
+	return nil
 }
 
 // Exec 执行请求
