@@ -80,12 +80,14 @@ func (c *DoClient) SetProxy(proxyStr string) error {
 //
 // 此函数没有关闭 response.Body
 func (c *DoClient) Exec(req *http.Request, headers map[string]string) (*http.Response, error) {
-	//	// 填充请求头
-	for key, value := range headers {
-		req.Header.Set(key, value)
+	// 设置请求头
+	if headers != nil {
+		for key, value := range headers {
+			req.Header.Set(key, value)
+		}
 	}
 	// 执行请求
-	// 此时还不能关闭response，否则后续方法无法读取响应的内容
+	// 此时还不能关闭 response，否则后续方法无法读取响应的内容
 	return c.Do(req)
 }
 
