@@ -62,7 +62,7 @@ func Test_isDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := isDir(tt.args.path)
+			got, err := IsDir(tt.args.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("isDir() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -195,7 +195,7 @@ func TestWrite(t *testing.T) {
 }
 
 func TestShowInExplorer(t *testing.T) {
-	err := ShowInExplorer(`E:/Temp/get_file.txt`)
+	err := ShowInExplorer(`D:/1925 年北洋“中国丧失领土领海图.jpg`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,5 +227,12 @@ func TestValidFileName1(t *testing.T) {
 				t.Errorf("ValidFileName() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestOpenAs(t *testing.T) {
+	err := OpenAs(`D:/1925 年北洋“中国丧失领土领海图.jpg`)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
