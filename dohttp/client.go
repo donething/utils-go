@@ -10,7 +10,6 @@ import (
 	"github.com/donething/utils-go/dofile"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -217,12 +216,9 @@ func (c *DoClient) PostFiles(url string, files map[string]interface{}, form map[
 	// 添加文件表单值
 	for field, data := range files {
 		// 当文件为路径时，获取文件名；没有文件名时伪随机生成文件名
-		var filename string
+		var filename = ""
 		if path, ok := data.(string); ok {
-			filename = filepath.Base(path)
-		}
-		if strings.TrimSpace(filename) == "" {
-			filename = fmt.Sprintf("%d_%d.jpg", time.Now().UnixNano(), rand.Intn(1000))
+			filename = strings.TrimSpace(filepath.Base(path))
 		}
 
 		// 创建当前文件的表单
