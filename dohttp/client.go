@@ -215,8 +215,8 @@ func (c *DoClient) PostFiles(url string, files map[string]interface{}, form map[
 
 	// 添加文件表单值
 	for field, data := range files {
-		// 当文件为路径时，获取文件名；没有文件名时伪随机生成文件名
-		var filename = ""
+		// 当文件为路径时，获取文件名；没有文件名时以当前时间戳生成文件名
+		filename := fmt.Sprintf("%d.tmp", time.Now().UnixNano())
 		if path, ok := data.(string); ok {
 			filename = strings.TrimSpace(filepath.Base(path))
 		}
@@ -240,7 +240,10 @@ func (c *DoClient) PostFiles(url string, files map[string]interface{}, form map[
 			fh.Close()
 		} else if bs, ok := data.([]byte); ok {
 			// 文件为二进制数组数据
-			fw.Write(bs)
+			_, err := fw.Write(bs)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
