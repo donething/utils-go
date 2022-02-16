@@ -1,53 +1,41 @@
 package dotext
 
 import (
-	"golang.org/x/text/encoding/unicode"
+	"github.com/saintfish/chardet"
+	"reflect"
 	"testing"
 	"time"
 )
 
-func TestUTF8ToGBK(t *testing.T) {
-	str := "UTF8 和 GBK 编码转换测试"
-	t.Log(str)
-
-	gbk, err := UTF8ToGBK([]byte(str))
-	if err != nil {
-		t.Fatal(err)
+func TestDetectFileCoding(t *testing.T) {
+	type args struct {
+		path string
 	}
-	t.Log(string(gbk))
-
-	utf8, err := GBKToUTF8(gbk)
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name    string
+		args    args
+		want    *chardet.Result
+		wantErr bool
+	}{
+		{
+			"UTF-8",
+			args{"D:/影视/连续剧/《金牌冰人》国语外挂GOTV_720P_TS_800M/01.srt"},
+			&chardet.Result{"UTF-8", "", 100},
+			false,
+		},
 	}
-	t.Log(string(utf8))
-
-	if string(utf8) != str {
-		t.Fatal("UTF8 和 GBK 编码转换测试：编码转换失败")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DetectFileCoding(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DetectFileCoding() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DetectFileCoding() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
-	t.Log("UTF8 和 GBK 编码转换测试：编码转换成功")
-}
-
-func TestUTF16ToUTF8(t *testing.T) {
-	str := "UTF8 和 UTF16 编码转换测试"
-	t.Log(str)
-
-	utf16, err := UTF8ToUTF16([]byte(str), unicode.LittleEndian, unicode.IgnoreBOM)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(string(utf16))
-
-	utf8, err := UTF16ToUTF8(utf16, unicode.LittleEndian, unicode.IgnoreBOM)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(string(utf8))
-
-	if string(utf8) != str {
-		t.Fatal("UTF8 和 UTF16 编码转换测试：编码转换失败")
-	}
-	t.Log("UTF8 和 UTF16 编码转换测试：编码转换成功")
 }
 
 func TestFormatDate(t *testing.T) {

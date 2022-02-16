@@ -6,9 +6,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/encoding/unicode"
-	"golang.org/x/text/transform"
+	"github.com/saintfish/chardet"
+	"golang.org/x/net/html/charset"
 	"io/ioutil"
 	"time"
 )
@@ -18,53 +17,62 @@ const (
 	TimeFormat = "2006-01-02 15:04:05"
 )
 
-// GBKToUTF8 GBK 编码转 UTF-8
-func GBKToUTF8(s []byte) ([]byte, error) {
-	// 编码转换：http://mengqi.info/html/2015/201507071345-using-golang-to-convert-text-between-gbk-and-utf-8.html
-	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewDecoder())
-	d, e := ioutil.ReadAll(reader)
-	if e != nil {
-		return nil, e
+// HasUTF8BOM 判断指定 UTF-8 编码的文本数据是否含 BOM
+// 参考：https://www.jianshu.com/p/5d8771da218b
+func HasUTF8BOM(bs []byte) bool {
+	if len(bs) >= 3 && bs[0] == 239 && bs[1] == 187 && bs[2] == 191 {
+		return true
 	}
-	return d, nil
+	return false
 }
 
-// UTF8ToGBK UTF-8 编码转 GBK
-func UTF8ToGBK(s []byte) ([]byte, error) {
-	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewEncoder())
-	d, e := ioutil.ReadAll(reader)
-	if e != nil {
-		return nil, e
+// DetectFileCoding 检测指定路径的文本文件的编码
+//
+// 返回 编码、地区、准确度（如 GB-18030、zh、100）
+func DetectFileCoding(path string) (*chardet.Result, error) {
+	bs, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
 	}
-	return d, nil
+	return DetectTextCoding(bs)
 }
 
-// UTF16ToUTF8 将 UTF16 编码转换为 UTF8 编码
+// DetectTextCoding 检测文本的编码，返回 编码、地区、准确度（如 GB-18030、zh、100）
 //
-// 参数 endian: unicode.LittleEndian、unicode.BigEndian
-//
-// 参数 bom: unicode.IgnoreBOM、unicode.UseBOM、unicode.ExpectBOM
-//
-// 参考：https://gist.github.com/bradleypeabody/185b1d7ed6c0c2ab6cec#gistcomment-2780177
-// 参考 https://blog.csdn.net/wyzxg/article/details/5349896
-func UTF16ToUTF8(bs []byte, endian unicode.Endianness, bom unicode.BOMPolicy) ([]byte, error) {
-	decoder := unicode.UTF16(endian, bom).NewDecoder()
-	bs8, err := decoder.Bytes(bs)
-	return bs8, err
+// [chardet: Charset detector library for golang derived from ICU](https://github.com/saintfish/chardet)
+func DetectTextCoding(data []byte) (result *chardet.Result, err error) {
+	detector := chardet.NewTextDetector()
+	return detector.DetectBest(data)
 }
 
-// UTF8ToUTF16 将 UTF8 编码转换为 UTF16 编码
+// TransformText 转换编码为无 BOM 的 UTF-8
 //
-// 参数 endian: unicode.LittleEndian、unicode.BigEndian
-//
-// 参数 bom: unicode.IgnoreBOM、unicode.UseBOM、unicode.ExpectBOM
-//
-// 参考 https://forum.golangbridge.org/t/how-to-convert-utf-8-string-to-utf-16-be-string/7072/2
-// 参考 https://blog.csdn.net/wyzxg/article/details/5349896
-func UTF8ToUTF16(bs []byte, endian unicode.Endianness, bom unicode.BOMPolicy) ([]byte, error) {
-	encoder := unicode.UTF16(endian, bom).NewEncoder()
-	bs16, err := encoder.Bytes(bs)
-	return bs16, err
+// 返回结果、原编码、可能的错误
+func TransformText(bs []byte) ([]byte, string, error) {
+	// 检测文本的编码
+	result, err := DetectTextCoding(bs)
+	if err != nil {
+		return nil, "", err
+	}
+	// 若本来就是无 BOM 的 UTF-8 编码，不需修改直接返回
+	if result.Charset == "UTF-8" && !HasUTF8BOM(bs) {
+		return nil, result.Charset, nil
+	}
+
+	// 按指定编码读取数据为 UTF-8 编码（可能含有 BOM，需要通过下面的方法去除）
+	// 参考：https://stackoverflow.com/a/44298295
+	byteReader := bytes.NewReader(bs)
+	reader, _ := charset.NewReaderLabel(result.Charset, byteReader)
+
+	// 读取结果
+	nbs, err := ioutil.ReadAll(reader)
+
+	// 如果是带有 BOM UTF-8，去除 BOM
+	if HasUTF8BOM(nbs) {
+		nbs = nbs[3:]
+	}
+
+	return nbs, result.Charset, err
 }
 
 // FormatDate 格式化时间
