@@ -41,7 +41,7 @@ func InitLog(path string, format int) (*log.Logger, *log.Logger, *log.Logger) {
 		e.Fatalln(err)
 	}
 	// 自定义日志格式
-	i = log.New(io.MultiWriter(file, os.Stdout), "INFO: ", format)
+	i = log.New(io.Writer(os.Stdout), "INFO: ", format)
 	w = log.New(io.MultiWriter(file, os.Stdout), "WARN: ", format)
 	e = log.New(io.MultiWriter(file, os.Stderr), "ERROR: ", format)
 	return i, w, e
