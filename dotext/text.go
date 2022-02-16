@@ -9,6 +9,7 @@ import (
 	"github.com/saintfish/chardet"
 	"golang.org/x/net/html/charset"
 	"io/ioutil"
+	"regexp"
 	"time"
 )
 
@@ -104,7 +105,8 @@ func Base64Decode(str string) ([]byte, error) {
 	return data, nil
 }
 
-// BytesHumanReadable 将文件大小的字节转为可读的字符（如"102 MB"）
+// BytesHumanReadable 将文件大小的字节转为可读的字符，如"102 MB"
+//
 // https://stackoverflow.com/a/30822306
 func BytesHumanReadable(bytes int64) string {
 	const unit = 1024
@@ -117,4 +119,23 @@ func BytesHumanReadable(bytes int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.2f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+// ResolveFanhao 解析文本中的番号
+//
+// 若没有找到番号就返回""
+func ResolveFanhao(text string) string {
+	// 正则写3个小括号，是为了之后判断番号的数字部分是否为3位
+	reg := regexp.MustCompile(`([a-zA-Z]+)([-_\s]?)([0-9]+)`)
+	result := reg.FindStringSubmatch(text)
+	if result != nil {
+		// 如果番号的数字部分不为3位，则需要用"0"填充
+		if len(result[3]) == 1 {
+			result[3] = "00" + result[3]
+		} else if len(result[3]) == 2 {
+			result[3] = "0" + result[3]
+		}
+		return result[1] + "-" + result[3]
+	}
+	return ""
 }
