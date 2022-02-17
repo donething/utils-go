@@ -63,7 +63,10 @@ func TransformText(bs []byte) ([]byte, string, error) {
 	// 按指定编码读取数据为 UTF-8 编码（可能含有 BOM，需要通过下面的方法去除）
 	// 参考：https://stackoverflow.com/a/44298295
 	byteReader := bytes.NewReader(bs)
-	reader, _ := charset.NewReaderLabel(result.Charset, byteReader)
+	reader, err := charset.NewReaderLabel(result.Charset, byteReader)
+	if err != nil {
+		return nil, "", err
+	}
 
 	// 读取结果
 	nbs, err := ioutil.ReadAll(reader)
