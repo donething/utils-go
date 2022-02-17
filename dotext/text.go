@@ -46,29 +46,36 @@ func DetectTextCoding(data []byte) (result *chardet.Result, err error) {
 	return detector.DetectBest(data)
 }
 
-// TransformText 转换编码为无 BOM 的 UTF-8
+// Text2UTF8 转换文本编码为无 BOM 的 UTF-8
 //
-// 返回结果、原编码、可能的错误
-func TransformText(bs []byte) ([]byte, string, error) {
+// 返回 结果、原编码、可能的错误
+func Text2UTF8(bs []byte) ([]byte, string, error) {
 	// 检测文本的编码
 	result, err := DetectTextCoding(bs)
 	if err != nil {
 		return nil, "", err
 	}
+	// 不知何故，上面检测方法会返回"GB-18030"，而标准编码中是没有横杠，所以手动去除
+	if result.Charset == "GB-18030" {
+		result.Charset = "GB18030"
+	}
+
 	// 若本来就是无 BOM 的 UTF-8 编码，不需修改直接返回
 	if result.Charset == "UTF-8" && !HasUTF8BOM(bs) {
 		return nil, result.Charset, nil
 	}
 
-	// 按指定编码读取数据为 UTF-8 编码（可能含有 BOM，需要通过下面的方法去除）
+	// 按指定编码读取数据为 UTF-8 编码（可能含有 BOM，需要去除，看 HasUTF8BOM() 部分）
+	// 根据文本编码获取对应的解码器，并创建可读对象
 	// 参考：https://stackoverflow.com/a/44298295
+	// https://www.iana.org/assignments/character-sets/character-sets.xhtml
 	byteReader := bytes.NewReader(bs)
 	reader, err := charset.NewReaderLabel(result.Charset, byteReader)
 	if err != nil {
-		return nil, "", err
+		return nil, result.Charset, err
 	}
 
-	// 读取结果
+	// 解码数据
 	nbs, err := ioutil.ReadAll(reader)
 
 	// 如果是带有 BOM UTF-8，去除 BOM
@@ -77,6 +84,25 @@ func TransformText(bs []byte) ([]byte, string, error) {
 	}
 
 	return nbs, result.Charset, err
+}
+
+// File2UTF8 转换文件编码为无 BOM 的 UTF-8
+//
+// 返回 是否改变了源文件、原编码、可能的错误
+func File2UTF8(path string) (bool, string, error) {
+	bs, err := ioutil.ReadFile(path)
+	if err != nil {
+		return false, "", err
+	}
+	data, encoding, err := Text2UTF8(bs)
+	if err != nil {
+		return false, encoding, err
+	}
+
+	if data == nil {
+		return false, encoding, nil
+	}
+	return true, encoding, ioutil.WriteFile(path, data, 0644)
 }
 
 // FormatDate 格式化时间
