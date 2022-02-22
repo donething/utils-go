@@ -89,7 +89,7 @@ func Query(keySubStr *string, bucket []byte) (map[string][]byte, error) {
 		c := b.Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if keySubStr != nil && !strings.Contains(string(k), *keySubStr) {
+			if keySubStr != nil && !strings.Contains(strings.ToLower(string(k)), strings.ToLower(*keySubStr)) {
 				continue
 			}
 			payload[string(k)] = v
