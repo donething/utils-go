@@ -12,6 +12,11 @@ var (
 	db *bolt.DB
 )
 
+// GetDB 获取数据库的实例，方便执行其它操作
+func GetDB() *bolt.DB {
+	return db
+}
+
 // Open 根据数据库路径打开数据库
 func Open(dbPath string) {
 	// 打开数据库
@@ -98,4 +103,20 @@ func Query(keySubStr *string, bucket []byte) (map[string][]byte, error) {
 	})
 
 	return payload, err
+}
+
+// Batch 批量插入数据
+func Batch(data map[string][]byte, bucket []byte) error {
+	err := db.Batch(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucket)
+		for key, bs := range data {
+			errPut := b.Put([]byte(key), bs)
+			if errPut != nil {
+				return errPut
+			}
+		}
+		return nil
+	})
+
+	return err
 }
