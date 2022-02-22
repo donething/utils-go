@@ -82,7 +82,7 @@ func Del(key []byte, bucket []byte) ([]byte, error) {
 //
 // param keySubStr 为需要包含的子字符串，当不为 nil 时，需要数据库中的键名为 string 类型;
 // 当 keySubStr 为 nil 时，返回所有数据
-func Query(bucket []byte, keySubStr *string) (map[string][]byte, error) {
+func Query(keySubStr *string, bucket []byte) (map[string][]byte, error) {
 	payload := make(map[string][]byte)
 	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
