@@ -26,6 +26,12 @@ type PushResult struct {
 
 // 微信测试号消息推送
 
+// SBMsgItem 微信测试号消息的项
+type SBMsgItem struct {
+	Value string `json:"value"`
+	Color string `json:"color"`
+}
+
 // SBMsg 微信测试号消息
 type SBMsg struct {
 	Title struct {

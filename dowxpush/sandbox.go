@@ -2,6 +2,7 @@
 package dowxpush
 
 import (
+	"github.com/donething/utils-go/dotext"
 	"time"
 )
 
@@ -24,12 +25,10 @@ func NewSandbox(appid string, secret string) *Sandbox {
 	}
 }
 
-// PushTpl 推送模板消息
-//
-// payload 可以使用 GenGeneralTpl() 快速生成
+// Push 推送消息
 //
 // url 如果是有效链接，那么点击消息将会打开该链接
-func (s *Sandbox) PushTpl(toUID string, tplID string, payload interface{}, url string) error {
+func (s *Sandbox) Push(toUID string, tplID string, payload interface{}, url string) error {
 	// 推送(POST)的数据
 	data := map[string]interface{}{"touser": toUID, "template_id": tplID,
 		"url": url, "data": payload}
@@ -37,20 +36,18 @@ func (s *Sandbox) PushTpl(toUID string, tplID string, payload interface{}, url s
 	return s.Core.Push(sbTokenURL, sbSendURL, data)
 }
 
-// GenGeneralTpl 生成通用消息模板
-func (s *Sandbox) GenGeneralTpl(title string, msg string, time string) *SBMsg {
-	return &SBMsg{
-		Title: struct {
-			Value string `json:"value"`
-			Color string `json:"color"`
-		}{Value: title},
-		Msg: struct {
-			Value string `json:"value"`
-			Color string `json:"color"`
-		}{Value: msg},
-		Time: struct {
-			Value string `json:"value"`
-			Color string `json:"color"`
-		}{Value: time},
+// PushTpl 推送模板消息
+//
+// url 如果是有效链接，那么点击消息将会打开该链接
+func (s *Sandbox) PushTpl(toUID string, tplID string, title string, msg string, url string) error {
+	payload := &SBMsg{
+		Title: SBMsgItem{Value: title + "\n"},
+		Msg:   SBMsgItem{Value: msg + "\n"},
+		Time:  SBMsgItem{Value: dotext.FormatDate(time.Now(), dotext.TimeFormat)},
 	}
+	// 推送(POST)的数据
+	data := map[string]interface{}{"touser": toUID, "template_id": tplID,
+		"url": url, "data": payload}
+
+	return s.Core.Push(sbTokenURL, sbSendURL, data)
 }
