@@ -83,6 +83,8 @@ func (q *QiYe) PushCard(agentid int, title string, description string, users str
 // PushMarkdown 推送 Markdown 消息（目前非企业微信不支持该类型）
 //
 // agentid 应用 ID；users 推送的目标（多个以"|"分隔），为空表示推送到所有人
+//
+// @see [企业微信报警中关于markdown的用法 - 三度](https://www.cnblogs.com/sanduzxcvbnm/p/14266180.html)
 func (q *QiYe) PushMarkdown(agentid int, content string, users string) error {
 	if users == "" {
 		users = "@all"
@@ -106,4 +108,19 @@ func (q *QiYe) PushMarkdown(agentid int, content string, users string) error {
 	}
 	fmt.Printf("POST 数据：%s\n", string(bsData))
 	return q.Core.Push(qyTokenURL, qySendURL, data)
+}
+
+// MdInfoText 生成 Markdown 中显示为绿色的文本
+func (q *QiYe) MdInfoText(text string) string {
+	return fmt.Sprintf("<font color='info'>%s</font>", text)
+}
+
+// MdCommentText 生成 Markdown 中显示为灰色的文本
+func (q *QiYe) MdCommentText(text string) string {
+	return fmt.Sprintf("<font color='comment'>%s</font>", text)
+}
+
+// MdWarningText 生成 Markdown 中显示为橙红色的文本
+func (q *QiYe) MdWarningText(text string) string {
+	return fmt.Sprintf("<font color='warning'>%s</font>", text)
 }
