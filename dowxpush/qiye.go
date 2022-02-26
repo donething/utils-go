@@ -84,7 +84,7 @@ func (q *QiYe) PushCard(agentid int, title string, description string, users str
 //
 // agentid 应用 ID；users 推送的目标（多个以"|"分隔），为空表示推送到所有人
 //
-// @see [企业微信报警中关于markdown的用法 - 三度](https://www.cnblogs.com/sanduzxcvbnm/p/14266180.html)
+// @see https://developer.work.weixin.qq.com/document/path/90236#markdown%E6%B6%88%E6%81%AF
 func (q *QiYe) PushMarkdown(agentid int, content string, users string) error {
 	if users == "" {
 		users = "@all"
@@ -110,17 +110,17 @@ func (q *QiYe) PushMarkdown(agentid int, content string, users string) error {
 	return q.Core.Push(qyTokenURL, qySendURL, data)
 }
 
-// MdInfoText 生成 Markdown 中显示为绿色的文本
-func (q *QiYe) MdInfoText(text string) string {
+// GenMdInfoText 生成 Markdown 中显示为绿色的文本
+func (q *QiYe) GenMdInfoText(text string) string {
 	return fmt.Sprintf("<font color='info'>%s</font>", text)
 }
 
-// MdCommentText 生成 Markdown 中显示为灰色的文本
-func (q *QiYe) MdCommentText(text string) string {
+// GenMdCommentText 生成 Markdown 中显示为灰色的文本
+func (q *QiYe) GenMdCommentText(text string) string {
 	return fmt.Sprintf("<font color='comment'>%s</font>", text)
 }
 
-// MdWarningText 生成 Markdown 中显示为橙红色的文本
-func (q *QiYe) MdWarningText(text string) string {
+// GenMdWarningText 生成 Markdown 中显示为橙红色的文本
+func (q *QiYe) GenMdWarningText(text string) string {
 	return fmt.Sprintf("<font color='warning'>%s</font>", text)
 }
