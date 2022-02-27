@@ -33,7 +33,7 @@ func (s *Sandbox) Push(toUID string, tplID string, payload interface{}, url stri
 	data := map[string]interface{}{"touser": toUID, "template_id": tplID,
 		"url": url, "data": payload}
 
-	return s.Core.Push(sbTokenURL, sbSendURL, data)
+	return s.Core.push(sbTokenURL, sbSendURL, data)
 }
 
 // PushTpl 推送模板消息
@@ -49,5 +49,5 @@ func (s *Sandbox) PushTpl(toUID string, tplID string, title string, msg string, 
 	data := map[string]interface{}{"touser": toUID, "template_id": tplID,
 		"url": url, "data": payload}
 
-	return s.Core.Push(sbTokenURL, sbSendURL, data)
+	return s.Core.push(sbTokenURL, sbSendURL, data)
 }

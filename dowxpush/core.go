@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
-	"github.com/donething/utils-go/dotext"
 	"time"
 )
 
@@ -52,7 +51,8 @@ func (c *Core) getToken(url string) error {
 	return nil
 }
 
-func (c *Core) Push(tokenURL string, sendURL string, data interface{}) error {
+// 推送消息
+func (c *Core) push(tokenURL string, sendURL string, data interface{}) error {
 	// 获取、更新 token
 	err := c.getToken(fmt.Sprintf(tokenURL, c.appid, c.secret))
 	if err != nil {
@@ -76,10 +76,4 @@ func (c *Core) Push(tokenURL string, sendURL string, data interface{}) error {
 	}
 
 	return nil
-}
-
-// 追加时间
-func aTime() string {
-	return fmt.Sprintf("<div class='gray'>%s</div>",
-		dotext.FormatDate(time.Now(), dotext.TimeFormat))
 }
