@@ -64,13 +64,16 @@ func (q *QiYe) PushText(agentid int, content string, users string) error {
 //
 // @param users 推送的目标（多个以"|"分隔），为空表示推送到所有人
 //
-// @param url 跳转链接
+// @param url 跳转链接 由于不能为空""，当传递""时，将设为默认值 "https://example.com"
 //
 // @param btnTxt 跳转标识文本（仅在企业微信中有效，在微信中无效）
 func (q *QiYe) PushCard(agentid int, title string, description string, users string,
 	url string, btnTxt string) error {
 	if users == "" {
 		users = "@all"
+	}
+	if url == "" {
+		url = "https://example.com"
 	}
 
 	data := QYMsgCard{
@@ -112,7 +115,7 @@ func (q *QiYe) PushMarkdown(agentid int, content string, users string) error {
 			Agentid: agentid,
 		},
 		Markdown: QYMsgItemText{
-			Content: content + "\n" + dotext.FormatDate(time.Now(), dotext.TimeFormat),
+			Content: content + "\n\n" + dotext.FormatDate(time.Now(), dotext.TimeFormat),
 		},
 	}
 
