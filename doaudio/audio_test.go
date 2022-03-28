@@ -25,7 +25,7 @@ func Test_PlayAudio(t *testing.T) {
 }
 
 func Benchmark_PlayAudio(b *testing.B) {
-	for i := 0; i < b.N; i++ { //use b.N for looping
+	for i := 0; i < b.N; i++ { // use b.N for looping
 		err := PlayAudio(audios.Success, 2, 2, BufSize8192)
 		if err != nil {
 			log.Printf("error: %v\n", err)
