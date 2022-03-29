@@ -1,4 +1,4 @@
-package dodb
+package dobolt
 
 import (
 	"github.com/boltdb/bolt"
