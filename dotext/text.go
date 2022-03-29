@@ -62,7 +62,7 @@ func Text2UTF8(bs []byte) ([]byte, string, error) {
 
 	// 若本来就是无 BOM 的 UTF-8 编码，不需修改直接返回
 	if result.Charset == "UTF-8" && !HasUTF8BOM(bs) {
-		return nil, result.Charset, nil
+		return bs, result.Charset, nil
 	}
 
 	// 按指定编码读取数据为 UTF-8 编码（可能含有 BOM，需要去除，看 HasUTF8BOM() 部分）
