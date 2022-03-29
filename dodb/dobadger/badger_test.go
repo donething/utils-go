@@ -150,7 +150,7 @@ func TestQuery(t *testing.T) {
 }
 
 func TestQueryPrefix(t *testing.T) {
-	got, err := db.QueryPrefix("test1")
+	got, err := db.QueryPrefix("test1", "")
 	if err != nil {
 		t.Errorf("fail: %s\n", err)
 		return

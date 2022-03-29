@@ -96,7 +96,7 @@ func (db *DoBadger) Query(keySubStr string) (map[string][]byte, error) {
 
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
-			if keySubStr == "" &&
+			if keySubStr != "" &&
 				!strings.Contains(strings.ToLower(string(item.Key())), strings.ToLower(keySubStr)) {
 				continue
 			}
@@ -118,8 +118,12 @@ func (db *DoBadger) Query(keySubStr string) (map[string][]byte, error) {
 	return payload, err
 }
 
-// QueryPrefix 前缀扫描
-func (db *DoBadger) QueryPrefix(prefixStr string) (map[string][]byte, error) {
+// QueryPrefix 扫描前缀和关键字
+//
+// keySub 为空""时，返回带有指定 prefixStr 的所有项
+//
+// 针对多个场景共用一个数据库，根据前缀区分场景的情况
+func (db *DoBadger) QueryPrefix(prefixStr string, keySub string) (map[string][]byte, error) {
 	payload := make(map[string][]byte)
 
 	err := db.DB.View(func(txn *badger.Txn) error {
@@ -129,6 +133,11 @@ func (db *DoBadger) QueryPrefix(prefixStr string) (map[string][]byte, error) {
 		prefix := []byte(prefixStr)
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
+			if keySub != "" &&
+				!strings.Contains(strings.ToLower(string(item.Key())), strings.ToLower(keySub)) {
+				continue
+			}
+
 			valueCopy, err := item.ValueCopy(nil)
 			if err != nil {
 				return err
