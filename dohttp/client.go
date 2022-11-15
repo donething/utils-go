@@ -40,11 +40,11 @@ type DoClient struct {
 }
 
 // New 初始化 DoClient
-func New(timeout time.Duration, needCookieJar bool, checkSSL bool) DoClient {
+func New(needCookieJar bool, checkSSL bool) DoClient {
 	c := &http.Client{Transport: http.DefaultTransport}
 	// 超时时间
 	c.Transport.(*http.Transport).DialContext = (&net.Dialer{
-		Timeout:   timeout,
+		Timeout:   0,
 		KeepAlive: 30 * time.Second,
 	}).DialContext
 
@@ -53,11 +53,13 @@ func New(timeout time.Duration, needCookieJar bool, checkSSL bool) DoClient {
 		cookieJar, _ := cookiejar.New(nil)
 		c.Jar = cookieJar
 	}
+
 	// 不需要检查SSL
 	if !checkSSL {
 		// 圆括号内为类型断言
 		c.Transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
+
 	return DoClient{c}
 }
 
@@ -71,6 +73,7 @@ func (c *DoClient) SetProxy(proxyStr string) error {
 	if err != nil {
 		return err
 	}
+	// 设置 Transport 的方法
 	c.Transport.(*http.Transport).Proxy = http.ProxyURL(proxyUrl)
 	return nil
 }
