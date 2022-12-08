@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
 	"net/url"
-	"time"
 )
 
 // TGBot TG 推送发送消息的机器人实例
@@ -29,7 +28,7 @@ const (
 )
 
 var (
-	client = dohttp.New(30*time.Second, false, false)
+	client = dohttp.New(false, false)
 )
 
 // NewTGBot 创建新的 Telegram 推送机器人
