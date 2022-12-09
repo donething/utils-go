@@ -55,7 +55,7 @@ func TestSendMediaGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msg, err := tg.SendMediaGroup(chatID, []Media{
+	medias := []Media{
 		{
 			Type:    Photo,
 			Media:   f1,
@@ -65,9 +65,11 @@ func TestSendMediaGroup(t *testing.T) {
 			Type:  Photo,
 			Media: f1,
 		},
-	})
+	}
+
+	msg, err := tg.SendMediaGroup(chatID, medias)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("发送本地文件的结果：%+v\n", *msg)
+	t.Logf("发送本地文件的结果：%+v。原数据：%+v\n", *msg, medias)
 }
