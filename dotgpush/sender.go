@@ -118,6 +118,7 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 			return nil, fmt.Errorf("解析速率限制的等待时长时出错：%w", err)
 		}
 
+		fmt.Printf("由于速率限制，等待 %d 秒后重新发送\n", sec)
 		time.Sleep(time.Duration(sec+1) * time.Second)
 		return bot.SendMediaGroup(chatID, album)
 	}
