@@ -1,22 +1,26 @@
 package dotgpush
 
 import (
+	"fmt"
 	"github.com/donething/utils-go/dofile"
 	"github.com/donething/utils-go/dohttp"
 	"testing"
 )
 
 var (
-	tg     = NewTGBot("")
-	chatID = ""
+	tg     = NewTGBot("xxx")
+	chatID = "xxx"
 )
 
 func init() {
-	tg.SetProxy(dohttp.ProxySocks5)
+	err := tg.SetProxy(dohttp.ProxySocks5)
+	if err != nil {
+		fmt.Printf("设置代理出错：%s\n", err)
+	}
 }
 
 func TestTGBot_SendMessage(t *testing.T) {
-	msg, err := tg.SendMessage(chatID, "测试普通文本消息")
+	msg, err := tg.SendMessage(chatID, "测试Markdown文本消息")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,11 +50,7 @@ func TestSendMediaGroup(t *testing.T) {
 
 	// 发送本地文件
 
-	f1, err := dofile.Read("C:/Users/Do/Downloads/金-01.jpg")
-	if err != nil {
-		t.Fatal(err)
-	}
-	f2, err := dofile.Read("C:/Users/Do/Downloads/糧-01.jpg")
+	f1, err := dofile.Read("C:/Users/Do/Downloads/正则.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestSendMediaGroup(t *testing.T) {
 		},
 		{
 			Type:  Photo,
-			Media: f2,
+			Media: f1,
 		},
 	})
 	if err != nil {

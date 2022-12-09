@@ -40,11 +40,11 @@ func NewTGBot(token string) *TGBot {
 
 // SetProxy 设置网络代理
 // 格式参考 dohttp.ProxySocks5、dohttp.ProxyHttp
-func (bot *TGBot) SetProxy(proxyStr string) {
-	client.SetProxy(proxyStr)
+func (bot *TGBot) SetProxy(proxyStr string) error {
+	return client.SetProxy(proxyStr)
 }
 
-// SendMessage 将文本消息发送到频道
+// SendMessage 发送Markdown文本消息
 func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 	form := url.Values{
 		"chat_id":    []string{chatID},
@@ -55,6 +55,7 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// 返回的消息
 	var msg Message
 	err = json.Unmarshal(bs, &msg)
@@ -62,14 +63,16 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 }
 
 // SendMediaGroup 发送一个媒体集
+//
+// 当只设置第一个媒体元素的`Caption`时，将作为该集的标题来显示
 func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error) {
 	form := make(map[string]string)
 	form["chat_id"] = chatID
 
-	// 存放媒体文件的数组，将被发送
+	// 当album为本地图片文件（二进制数据），需要作为文件发送
 	filesList := make(map[string]interface{})
 	for i, m := range album {
-		// 当文件形式为二进制数组数据时，需要在表单中加入该数据的指向标志
+		// 此时需要在表单中加入该数据的指向标志
 		if bs, ok := m.Media.([]byte); ok {
 			album[i].Media = fmt.Sprintf("attach://%d", i)
 			filesList[fmt.Sprintf("%d", i)] = bs
