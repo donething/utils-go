@@ -71,5 +71,5 @@ func TestSendMediaGroup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("发送本地文件的结果：%+v。原数据：%+v\n", *msg, medias)
+	t.Logf("发送本地文件的结果：%+v\n", *msg)
 }
