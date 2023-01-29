@@ -15,7 +15,7 @@ type Core struct {
 	expires time.Time // token 的过期时间，以重复利用
 }
 
-var client = dohttp.New(30*time.Second, false, false)
+var client = dohttp.New(false, false)
 
 // 获取 token
 func (c *Core) getToken(url string) error {
