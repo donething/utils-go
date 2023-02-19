@@ -22,12 +22,6 @@ const (
 	// API
 	urlSendMsg        = "https://api.telegram.org/%s/sendMessage"
 	urlSendMediaGroup = "https://api.telegram.org/%s/sendMediaGroup"
-
-	// Audio 媒体的类型
-	Audio    = "audio"
-	Document = "document"
-	Photo    = "photo"
-	Video    = "video"
 )
 
 var (
@@ -52,7 +46,7 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 	form := url.Values{
 		"chat_id":    []string{chatID},
 		"text":       []string{text},
-		"parse_mode": []string{"markdown"},
+		"parse_mode": []string{"MarkdownV2"},
 	}
 	bs, err := client.PostForm(fmt.Sprintf(urlSendMsg, bot.token), form.Encode(), nil)
 	if err != nil {
@@ -79,10 +73,15 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 	// 当album为本地图片文件（二进制数据），需要作为文件发送
 	filesList := make(map[string]interface{})
 	for i, m := range album {
+		parseMode := "MarkdownV2"
+		if m.ParseMode != "" {
+			parseMode = m.ParseMode
+		}
 		n := Media{
-			Type:    m.Type,
-			Media:   m.Media,
-			Caption: m.Caption,
+			Type:      m.Type,
+			Media:     m.Media,
+			Caption:   m.Caption,
+			ParseMode: parseMode,
 		}
 
 		// 此时需要在表单中加入该数据的指向标志

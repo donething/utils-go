@@ -9,7 +9,7 @@ import (
 
 var (
 	tg     = NewTGBot("xxx")
-	chatID = "xxx"
+	chatID = "yyy"
 )
 
 func init() {
@@ -20,7 +20,7 @@ func init() {
 }
 
 func TestTGBot_SendMessage(t *testing.T) {
-	msg, err := tg.SendMessage(chatID, "测试Markdown文本消息")
+	msg, err := tg.SendMessage(chatID, "测试Markdown文本消息：[搜索](https://www.google.com/)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,19 +50,19 @@ func TestSendMediaGroup(t *testing.T) {
 
 	// 发送本地文件
 
-	f1, err := dofile.Read("C:/Users/Do/Downloads/正则.jpg")
+	f1, err := dofile.Read("C:/Users/Do/Downloads/343311_large.png")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	medias := []Media{
 		{
-			Type:    Photo,
+			Type:    TypePhoto,
 			Media:   f1,
-			Caption: "图1",
+			Caption: "图片：[搜索](https://www.google.com/)",
 		},
 		{
-			Type:  Photo,
+			Type:  TypePhoto,
 			Media: f1,
 		},
 	}
