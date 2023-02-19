@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -42,6 +43,8 @@ func (bot *TGBot) SetProxy(proxyStr string) error {
 }
 
 // SendMessage 发送Markdown文本消息
+//
+// 注意使用 ReplaceMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
 func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 	form := url.Values{
 		"chat_id":    []string{chatID},
@@ -62,6 +65,8 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 // SendMediaGroup 发送一个媒体集
 //
 // 当只设置第一个媒体元素的`Caption`时，将作为该集的标题来显示
+//
+// 注意使用 ReplaceMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
 func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error) {
 	// 避免改动原数据，以免重试发送时丢失二进制文件数据
 	var newAlbum = make([]Media, 0, len(album))
@@ -73,6 +78,7 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 	// 当album为本地图片文件（二进制数据），需要作为文件发送
 	filesList := make(map[string]interface{})
 	for i, m := range album {
+		// 设置Caption的解析模式，默认"MarkdownV2"
 		parseMode := "MarkdownV2"
 		if m.ParseMode != "" {
 			parseMode = m.ParseMode
@@ -123,4 +129,16 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 	}
 
 	return &msg, nil
+}
+
+// ReplaceMk 转义 Markdown V2 标题中的非法字符。即属于 Markdown 字符，而不想当做 Markdown 字符渲染
+//
+// 用法：ReplaceMk("测#试Markdown文本*消息*结束：") + "[搜索](https://www.google.com/)"
+//
+// 结果："测#试Markdown文本*消息*结束：搜索 (https://www.google.com/)"
+//
+// 参考：https://core.telegram.org/bots/api#markdownv2-style
+func ReplaceMk(text string) string {
+	reg := regexp.MustCompile("([_*\\[\\]()~`>#+\\-=|{}.!])")
+	return reg.ReplaceAllString(text, "\\${1}")
 }

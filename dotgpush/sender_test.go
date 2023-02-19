@@ -20,7 +20,8 @@ func init() {
 }
 
 func TestTGBot_SendMessage(t *testing.T) {
-	msg, err := tg.SendMessage(chatID, "测试Markdown文本消息：[搜索](https://www.google.com/)")
+	txt := ReplaceMk("测#试Markdown文本*消息*：") + "[搜索](https://www.google.com/)"
+	msg, err := tg.SendMessage(chatID, txt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,4 +73,28 @@ func TestSendMediaGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("发送本地文件的结果：%+v\n", *msg)
+}
+
+func TestReplaceMk(t *testing.T) {
+	type args struct {
+		text string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "测试",
+			args: args{text: "测试_不错*继续[中括号](小括号)大于>井号#感叹号!结尾。"},
+			want: "测试\\_不错\\*继续\\[中括号\\]\\(小括号\\)大于\\>井号\\#感叹号\\!结尾。",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ReplaceMk(tt.args.text); got != tt.want {
+				t.Errorf("ReplaceMk() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
