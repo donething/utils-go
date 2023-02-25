@@ -1,6 +1,6 @@
 module github.com/donething/utils-go
 
-go 1.17
+go 1.20
 
 require (
 	github.com/boltdb/bolt v1.3.1
