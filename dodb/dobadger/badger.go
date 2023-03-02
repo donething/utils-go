@@ -67,6 +67,21 @@ func (db *DoBadger) Get(key []byte) ([]byte, error) {
 	return valCopy, nil
 }
 
+// Exist 是否存在指定的键
+func (db *DoBadger) Exist(key []byte) (bool, error) {
+	_, err := db.Get(key)
+
+	if err == badger.ErrKeyNotFound {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // Set 存放数据
 func (db *DoBadger) Set(key []byte, value []byte) error {
 	return db.DB.Update(func(txn *badger.Txn) error {
