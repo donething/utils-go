@@ -2,3 +2,6 @@
 
 *.db
 *.db.lock
+
+test_conf.json
+test_conf.json.bak

@@ -46,3 +46,10 @@ func InitLog(path string, format int) (*log.Logger, *log.Logger, *log.Logger) {
 	e = log.New(io.MultiWriter(file, os.Stderr), "ERROR: ", format)
 	return i, w, e
 }
+
+// CkPanic 出错时，强制关闭程序
+func CkPanic(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
