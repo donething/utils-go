@@ -3,5 +3,7 @@
 *.db
 *.db.lock
 
+dbtest/
+
 test_conf.json
 test_conf.json.bak

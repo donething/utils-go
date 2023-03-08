@@ -6,7 +6,7 @@
 package dobadger
 
 import (
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v4"
 	"log"
 	"strings"
 )
@@ -67,8 +67,8 @@ func (db *DoBadger) Get(key []byte) ([]byte, error) {
 	return valCopy, nil
 }
 
-// Exist 是否存在指定的键
-func (db *DoBadger) Exist(key []byte) (bool, error) {
+// Has 是否存在指定的键
+func (db *DoBadger) Has(key []byte) (bool, error) {
 	_, err := db.Get(key)
 
 	if err == badger.ErrKeyNotFound {

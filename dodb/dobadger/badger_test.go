@@ -8,7 +8,7 @@ import (
 var db *DoBadger
 
 func init() {
-	db = Open("C:/Do/Tmp/dbtest", nil)
+	db = Open("./dbtest", nil)
 }
 
 func TestSet(t *testing.T) {
