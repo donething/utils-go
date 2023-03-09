@@ -8,7 +8,7 @@ require (
 	github.com/hajimehoshi/oto v0.6.1
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
 	go.etcd.io/bbolt v1.3.7
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
+	golang.org/x/net v0.7.0
 )
 
 require (
@@ -28,6 +28,6 @@ require (
 	golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522 // indirect
 	golang.org/x/image v0.5.0 // indirect
 	golang.org/x/mobile v0.0.0-20190509164839-32b2708ab171 // indirect
-	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 )
