@@ -45,7 +45,7 @@ func (db *DoBadger) Close() error {
 	return nil
 }
 
-// Get 获取数据
+// Get 获取数据。不存在该键时返回错误`ErrKeyNotFound`
 func (db *DoBadger) Get(key []byte) ([]byte, error) {
 	var valCopy []byte
 	err := db.DB.View(func(txn *badger.Txn) error {

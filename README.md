@@ -2,7 +2,7 @@
 
 自用 Golang 工具
 
-## doaudio
+# doaudio
 
 发送提示音
 
@@ -13,7 +13,7 @@ if err != nil {
 }
 ```
 
-## doconf
+# doconf
 
 ```go
 type DoConf struct {
@@ -41,35 +41,87 @@ func initConf() {
 }
 ```
 
-## dodb
+# dodb
 
-doltdb 键值数据库操作
+## dobadger
 
-## dofile
+使用`badger`键值数据库
+
+```go
+const dbDir = "mydb"
+
+var DB *dobadger.DoBadger
+
+func init() {
+	// 打开数据库
+	DB, err = dobadger.Open(dbDir, nil)
+    if err != nil {
+        panic(err)
+    }
+}
+```
+
+## dodolt
+
+使用`etcd-io/bbolt`键值数据库
+
+```go
+const dbPath = "mydb.db"
+
+var DB *doblot.DoBolt
+
+func init() {
+	// 打开数据库
+	DB, err = dobolt.Open(dbPath, nil, nil)
+    if err != nil {
+        panic(err)
+    }
+
+	// 创建桶
+    err := DB.Create(bucketName)
+    if err != nil {
+        panic(err)
+    }
+
+	// 读取值
+    value, err := db.Get([]byte("name"), []byte("people"))
+    if err != nil {
+        panic(err)
+    }
+	
+	// 写入值
+	err := db.Set([]byte("name"), []byte("LiLi"), []byte("people"))
+    if err != nil {
+        panic(err)
+    }
+}
+```
+
+# dofile
 
 文件操作
 
-## dohttp
+# dohttp
 
 执行网络请求
 
-## doint
+# doint
 
 终端中断命令
 
-## dolog
+# dolog
 
 日志处理
 
-## dotext
+# dotext
 
 文本处理
 
-## dotgpush
+# dotgpush
 
 TG 消息推送
 
-## dowxpush
+# dowxpush
 
 微信消息推送
 

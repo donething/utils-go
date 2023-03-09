@@ -54,7 +54,7 @@ func (db *DoBolt) Create(bucket []byte) error {
 	})
 }
 
-// Get 获取桶中键对应的值
+// Get 获取桶中键对应的值。不存在该键时返回`nil`
 func (db *DoBolt) Get(key []byte, bucket []byte) ([]byte, error) {
 	var value []byte
 	err := db.DB.View(func(tx *bolt.Tx) error {
@@ -69,8 +69,8 @@ func (db *DoBolt) Get(key []byte, bucket []byte) ([]byte, error) {
 	return value, err
 }
 
-// Put 向桶中存放数据
-func (db *DoBolt) Put(key []byte, value []byte, bucket []byte) error {
+// Set 向桶中存放数据
+func (db *DoBolt) Set(key []byte, value []byte, bucket []byte) error {
 	return db.DB.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		return b.Put(key, value)

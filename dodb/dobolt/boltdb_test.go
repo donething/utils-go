@@ -103,8 +103,8 @@ func TestPut(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := db.Put(tt.args.key, tt.args.value, tt.args.bucket); (err != nil) != tt.wantErr {
-				t.Errorf("Put() error = %v, wantErr %v", err, tt.wantErr)
+			if err := db.Set(tt.args.key, tt.args.value, tt.args.bucket); (err != nil) != tt.wantErr {
+				t.Errorf("Set() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
