@@ -1,80 +1,86 @@
+// Package dobolt boltdb 的帮助函数
+//
+// @see https://github.com/etcd-io/bbolt
 package dobolt
 
 import (
-	"github.com/boltdb/bolt"
-	"log"
+	bolt "go.etcd.io/bbolt"
+	"os"
 	"strings"
 	"time"
 )
 
-var (
-	// 数据库的实例
-	db *bolt.DB
-)
-
-// GetDB 获取数据库的实例，方便执行其它操作
-func GetDB() *bolt.DB {
-	return db
+// DoBolt boltdb 的包装。执行数据操作后不会关闭数据库，可按需调用`db.DB.Close()`关闭。还可以在程序退出时，才关闭数据库
+type DoBolt struct {
+	DB *bolt.DB
 }
 
-// Open 根据数据库路径打开数据库
-func Open(dbPath string) {
+// Open 根据数据库路径打开数据库。当 `mode`、`options` 为 `nil` 时，将使用默认值
+func Open(dbPath string, mode *os.FileMode, options *bolt.Options) (*DoBolt, error) {
+	// 设置选项
+	var md = mode
+	if md == nil {
+		// 分配内存，避免赋值时发生空指针异常
+		md = new(os.FileMode)
+		*md = 0600
+	}
+
+	var opts = options
+	if opts == nil {
+		opts = &bolt.Options{Timeout: 3 * time.Second}
+	}
+
 	// 打开数据库
-	var err error
-	db, err = bolt.Open(dbPath, 0600, &bolt.Options{Timeout: 3 * time.Second})
-	if err != nil {
-		log.Fatalf("打开数据库'%s'出错：%s\n", dbPath, err)
-	}
+	db, err := bolt.Open(dbPath, *md, opts)
+	return &DoBolt{DB: db}, err
 }
 
-// Close 关闭数据库，请仅用此函数关闭，不要再其它地方调用 db.Close() 来关闭数据库
-func Close() {
-	if db != nil {
-		err := db.Close()
-		if err != nil {
-			log.Fatalf("关闭数据库出错：%s\n", err)
-		}
+// Close 关闭数据库。请仅用此函数关闭，不要再其它地方调用 db.DB.Close() 来关闭数据库
+func (db *DoBolt) Close() error {
+	if db.DB != nil {
+		err := db.DB.Close()
+		db.DB = nil
+		return err
 	}
+
+	return nil
 }
 
 // Create 创建桶
-func Create(bucket []byte) error {
-	return db.Update(func(tx *bolt.Tx) error {
+func (db *DoBolt) Create(bucket []byte) error {
+	return db.DB.Update(func(tx *bolt.Tx) error {
 		_, errC := tx.CreateBucketIfNotExists(bucket)
 		return errC
 	})
 }
 
 // Get 获取桶中键对应的值
-func Get(key []byte, bucket []byte) ([]byte, error) {
-	// open a Read-only transaction with the first argument `false`
-	tx, err := db.Begin(false)
-	if err != nil {
-		return nil, err
-	}
+func (db *DoBolt) Get(key []byte, bucket []byte) ([]byte, error) {
+	var value []byte
+	err := db.DB.View(func(tx *bolt.Tx) error {
+		value = tx.Bucket(bucket).Get(key)
+		// 获取的值只在事务内有效，之外需要复制后返回，否则可能报错：unexpected fault address
+		// @see https://github.com/boltdb/bolt/issues/204
+		// got := make([]byte, len(got))
+		// copy(got, value)
+		return nil
+	})
 
-	// do something ...
-	got := tx.Bucket(bucket).Get(key)
-	// 对值需要复制后返回，否则报错：unexpected fault address
-	// @see https://github.com/boltdb/bolt/issues/204
-	// ng := make([]byte, len(got))
-	// copy(ng, got)
-
-	return got, nil
+	return value, err
 }
 
 // Put 向桶中存放数据
-func Put(key []byte, value []byte, bucket []byte) error {
-	return db.Update(func(tx *bolt.Tx) error {
+func (db *DoBolt) Put(key []byte, value []byte, bucket []byte) error {
+	return db.DB.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		return b.Put(key, value)
 	})
 }
 
 // Del 删除桶中的数据
-func Del(key []byte, bucket []byte) ([]byte, error) {
+func (db *DoBolt) Del(key []byte, bucket []byte) ([]byte, error) {
 	var data []byte
-	err := db.Update(func(tx *bolt.Tx) error {
+	err := db.DB.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		data = b.Get(key)
 		return b.Delete(key)
@@ -87,9 +93,9 @@ func Del(key []byte, bucket []byte) ([]byte, error) {
 //
 // param keySubStr 为需要包含的子字符串，当不为 nil 时，需要数据库中的键名为 string 类型;
 // 当 keySubStr 为 nil 时，返回所有数据
-func Query(keySubStr *string, bucket []byte) (map[string][]byte, error) {
+func (db *DoBolt) Query(keySubStr *string, bucket []byte) (map[string][]byte, error) {
 	payload := make(map[string][]byte)
-	err := db.View(func(tx *bolt.Tx) error {
+	err := db.DB.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		c := b.Cursor()
 
@@ -106,8 +112,8 @@ func Query(keySubStr *string, bucket []byte) (map[string][]byte, error) {
 }
 
 // Batch 批量插入数据
-func Batch(data map[string][]byte, bucket []byte) error {
-	err := db.Batch(func(tx *bolt.Tx) error {
+func (db *DoBolt) Batch(data map[string][]byte, bucket []byte) error {
+	err := db.DB.Batch(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		for key, bs := range data {
 			errPut := b.Put([]byte(key), bs)

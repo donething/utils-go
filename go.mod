@@ -3,11 +3,11 @@ module github.com/donething/utils-go
 go 1.20
 
 require (
-	github.com/boltdb/bolt v1.3.1
 	github.com/dgraph-io/badger/v4 v4.0.1
 	github.com/hajimehoshi/go-mp3 v0.3.2
 	github.com/hajimehoshi/oto v0.6.1
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
+	go.etcd.io/bbolt v1.3.7
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 )
 
@@ -28,6 +28,6 @@ require (
 	golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522 // indirect
 	golang.org/x/image v0.0.0-20190507092727-e4e5bf290fec // indirect
 	golang.org/x/mobile v0.0.0-20190509164839-32b2708ab171 // indirect
-	golang.org/x/sys v0.0.0-20221010170243-090e33056c14 // indirect
+	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/text v0.3.8 // indirect
 )

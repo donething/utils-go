@@ -7,23 +7,21 @@ package dobadger
 
 import (
 	"github.com/dgraph-io/badger/v4"
-	"log"
 	"strings"
 )
 
-// DoBadger badger 的包装
+// DoBadger badger 的包装。执行数据操作后不会关闭数据库，可按需调用`db.DB.Close()`关闭。还可以在程序退出时，才关闭数据库
 type DoBadger struct {
 	DB *badger.DB
 }
 
-// Open 根据数据库路径打开数据库，当 Options 为 nil 时，使用默认 Options
-func Open(dbDirPath string, optsNullable *badger.Options) *DoBadger {
+// Open 根据数据库路径打开数据库。当 optsNullable 为 nil 时，使用默认值
+func Open(dbDirPath string, optsNullable *badger.Options) (*DoBadger, error) {
 	// 处理选项
-	var opts badger.Options
-	if optsNullable != nil {
-		opts = *optsNullable
-	} else {
-		opts = badger.DefaultOptions(dbDirPath)
+	var opts = optsNullable
+	if opts == nil {
+		op := badger.DefaultOptions(dbDirPath)
+		opts = &op
 		opts.CompactL0OnClose = true
 		opts.ValueLogFileSize = 1024 * 1024 * 10
 		opts.Logger = nil
@@ -31,21 +29,20 @@ func Open(dbDirPath string, optsNullable *badger.Options) *DoBadger {
 
 	// 打开数据库
 	var err error
-	db, err := badger.Open(opts)
-	if err != nil {
-		log.Fatalf("打开数据库'%s'出错：%s\n", dbDirPath, err)
-	}
+	db, err := badger.Open(*opts)
 
-	return &DoBadger{DB: db}
+	return &DoBadger{DB: db}, err
 }
 
-// Close 关闭数据库，请仅用此函数关闭，不要再其它地方调用 db.Close() 来关闭数据库
+// Close 关闭数据库。请仅用此函数关闭，不要再其它地方调用 db.DB.Close() 来关闭数据库
 func (db *DoBadger) Close() error {
-	if db.DB == nil {
-		return nil
+	if db.DB != nil {
+		err := db.DB.Close()
+		db.DB = nil
+		return err
 	}
 
-	return db.DB.Close()
+	return nil
 }
 
 // Get 获取数据

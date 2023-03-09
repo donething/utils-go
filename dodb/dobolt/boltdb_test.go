@@ -1,9 +1,12 @@
 package dobolt
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
+
+var db *DoBolt
 
 var (
 	bucketName = []byte("classes")
@@ -16,19 +19,24 @@ var (
 )
 
 func init() {
-	Open("test.db")
+	var err error
+	db, err = Open("./dbtest.db", nil, nil)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func TestCreate(t *testing.T) {
-	err := Create(bucketName)
+	err := db.Create(bucketName)
 	if err != nil {
 		t.Errorf("创建桶失败：%s\n", err)
 	}
 	t.Logf("创建桶成功")
-	Close()
+	db.Close()
 }
 
 func TestGet(t *testing.T) {
+	defer db.Close()
 	type args struct {
 		key    []byte
 		bucket []byte
@@ -51,7 +59,8 @@ func TestGet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Get(tt.args.key, tt.args.bucket)
+			got, err := db.Get(tt.args.key, tt.args.bucket)
+			fmt.Printf("获取的数据：%s\n", got)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -94,11 +103,12 @@ func TestPut(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Put(tt.args.key, tt.args.value, tt.args.bucket); (err != nil) != tt.wantErr {
+			if err := db.Put(tt.args.key, tt.args.value, tt.args.bucket); (err != nil) != tt.wantErr {
 				t.Errorf("Put() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
+	db.Close()
 }
 
 func TestDel(t *testing.T) {
@@ -124,7 +134,7 @@ func TestDel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Del(tt.args.key, tt.args.bucket)
+			got, err := db.Del(tt.args.key, tt.args.bucket)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Del() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -134,6 +144,7 @@ func TestDel(t *testing.T) {
 			}
 		})
 	}
+	db.Close()
 }
 
 func TestQuery(t *testing.T) {
@@ -172,7 +183,7 @@ func TestQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Query(tt.args.keySubStr, tt.args.bucket)
+			got, err := db.Query(tt.args.keySubStr, tt.args.bucket)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Query() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -182,4 +193,5 @@ func TestQuery(t *testing.T) {
 			}
 		})
 	}
+	db.Close()
 }

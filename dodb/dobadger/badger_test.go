@@ -8,7 +8,11 @@ import (
 var db *DoBadger
 
 func init() {
-	db = Open("./dbtest", nil)
+	var err error
+	db, err = Open("./dbtest", nil)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func TestSet(t *testing.T) {
