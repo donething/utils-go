@@ -1,7 +1,7 @@
-// Package dotgpush 绑定机器人的 token 后即可发送消息
-// tg := dotgpush.NewTGBot(token)
+// Package dotg 绑定机器人的 token 后即可发送消息
+// tg := dotg.NewTGBot(token)
 // tg.SendMessage(chatID, text)
-package dotgpush
+package dotg
 
 import (
 	"encoding/json"

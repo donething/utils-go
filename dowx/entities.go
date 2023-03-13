@@ -1,4 +1,4 @@
-package dowxpush
+package dowx
 
 // 请求的相应
 

@@ -1,4 +1,4 @@
-package dowxpush
+package dowx
 
 import (
 	"fmt"

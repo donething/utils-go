@@ -1,4 +1,4 @@
-package dotgpush
+package dotg
 
 const (
 	// TypeAudio 媒体的类型

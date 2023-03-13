@@ -1,4 +1,4 @@
-package dotgpush
+package dotg
 
 import (
 	"fmt"

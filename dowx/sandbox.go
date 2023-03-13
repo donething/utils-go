@@ -1,5 +1,5 @@
-// Package dowxpush 微信测试号消息推送
-package dowxpush
+// Package dowx 微信测试号消息推送
+package dowx
 
 import (
 	"github.com/donething/utils-go/dotext"
