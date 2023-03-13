@@ -6,6 +6,7 @@
 package dobolt
 
 import (
+	"bytes"
 	bolt "go.etcd.io/bbolt"
 	"os"
 	"strings"
@@ -93,20 +94,38 @@ func (db *DoBolt) Del(key []byte, bucket []byte) ([]byte, error) {
 
 // Query 查询指定桶内的所有数据
 //
-// param keySubStr 为需要包含的子字符串，当不为 nil 时，需要数据库中的键名为 string 类型;
-// 当 keySubStr 为 nil 时，返回所有数据
-func (db *DoBolt) Query(keySubStr *string, bucket []byte) (map[string][]byte, error) {
+// 参数 keySub 需要包含的的子串。当为空时，返回所有数据
+func (db *DoBolt) Query(keySub string, bucket []byte) (map[string][]byte, error) {
 	payload := make(map[string][]byte)
 	err := db.DB.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bucket)
-		c := b.Cursor()
+		c := tx.Bucket(bucket).Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if keySubStr != nil && !strings.Contains(strings.ToLower(string(k)), strings.ToLower(*keySubStr)) {
+			if keySub != "" && !strings.Contains(strings.ToUpper(string(k)), strings.ToUpper(keySub)) {
 				continue
 			}
+
 			payload[string(k)] = v
 		}
+
+		return nil
+	})
+
+	return payload, err
+}
+
+// QueryPrefix 指定桶内的前缀扫描
+//
+// 参数 prefix 为需要扫描的前缀
+func (db *DoBolt) QueryPrefix(prefix []byte, bucket []byte) (map[string][]byte, error) {
+	payload := make(map[string][]byte)
+	err := db.DB.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket(bucket).Cursor()
+
+		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+			payload[string(k)] = v
+		}
+
 		return nil
 	})
 

@@ -151,7 +151,7 @@ func TestQuery(t *testing.T) {
 	var f = "fruit"
 	type args struct {
 		bucket    []byte
-		keySubStr *string
+		keySubStr string
 	}
 	tests := []struct {
 		name    string
@@ -163,7 +163,7 @@ func TestQuery(t *testing.T) {
 			name: "Test query fruit",
 			args: args{
 				bucket:    bucketName,
-				keySubStr: &f,
+				keySubStr: f,
 			},
 			want:    map[string][]byte{string(classesFruit): classesFruitValue},
 			wantErr: false,
@@ -172,7 +172,7 @@ func TestQuery(t *testing.T) {
 			name: "Test query all",
 			args: args{
 				bucket:    bucketName,
-				keySubStr: nil,
+				keySubStr: "",
 			},
 			want: map[string][]byte{
 				string(classesFruit): classesFruitValue,
@@ -194,4 +194,15 @@ func TestQuery(t *testing.T) {
 		})
 	}
 	db.Close()
+}
+
+func TestDoBolt_QueryPrefix(t *testing.T) {
+	got, err := db.QueryPrefix([]byte("too"), bucketName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, bs := range got {
+		t.Logf("值：%s\n", string(bs))
+	}
 }
