@@ -44,7 +44,7 @@ func (bot *TGBot) SetProxy(proxyStr string) error {
 
 // SendMessage 发送Markdown文本消息
 //
-// 注意使用 ReplaceMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
+// 注意使用 EscapeMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
 func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 	form := url.Values{
 		"chat_id":    []string{chatID},
@@ -66,7 +66,7 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 //
 // 当只设置第一个媒体元素的`Caption`时，将作为该集的标题来显示
 //
-// 注意使用 ReplaceMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
+// 注意使用 EscapeMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
 func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error) {
 	// 避免改动原数据，以免重试发送时丢失二进制文件数据
 	var newAlbum = make([]Media, 0, len(album))
@@ -131,14 +131,25 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 	return &msg, nil
 }
 
-// ReplaceMk 转义 Markdown V2 标题中的非法字符。即属于 Markdown 字符，而不想当做 Markdown 字符渲染
+// EscapeMk 转义标题中不想渲染为  Markdown V2 的字符
 //
-// 用法：ReplaceMk("测#试Markdown文本*消息*结束：") + "[搜索](https://www.google.com/)"
+// 用法：EscapeMk("测#试Markdown文本*消息*结束：") + "*[搜索](https://www.google.com/)* #标签"
 //
-// 结果："测#试Markdown文本*消息*结束：搜索 (https://www.google.com/)"
+// 加号前一段将转义，不渲染为 Markdown；后一段将作为 Markdown 渲染。
+//
+// 即结果："测#试Markdown文本*消息*结束：搜索 #标签"。其中“搜索”的字体会加粗
 //
 // 参考：https://core.telegram.org/bots/api#markdownv2-style
-func ReplaceMk(text string) string {
-	reg := regexp.MustCompile("([_*\\[\\]()~`>#+\\-=|{}.!])")
+func EscapeMk(text string) string {
+	// 已替换'['，就不用替换']'了
+	reg := regexp.MustCompile("([_*\\[()~`>#+\\-=|{}.!])")
+	return reg.ReplaceAllString(text, "\\${1}")
+}
+
+// LegalMk 合法化标题中的非法 Markdown V2 字符
+//
+// 否则，直接发送会报错，提示需要转义，如'\#'
+func LegalMk(text string) string {
+	reg := regexp.MustCompile("([*])")
 	return reg.ReplaceAllString(text, "\\${1}")
 }

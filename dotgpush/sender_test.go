@@ -20,7 +20,7 @@ func init() {
 }
 
 func TestTGBot_SendMessage(t *testing.T) {
-	txt := ReplaceMk("测#试Markdown文本*消息*：") + "[搜索](https://www.google.com/)"
+	txt := EscapeMk("测#试Markdown文本*消息*：") + "[搜索](https://www.google.com/)"
 	msg, err := tg.SendMessage(chatID, txt)
 	if err != nil {
 		t.Fatal(err)
@@ -92,8 +92,8 @@ func TestReplaceMk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ReplaceMk(tt.args.text); got != tt.want {
-				t.Errorf("ReplaceMk() = %v, want %v", got, tt.want)
+			if got := EscapeMk(tt.args.text); got != tt.want {
+				t.Errorf("EscapeMk() = %v, want %v", got, tt.want)
 			}
 		})
 	}
