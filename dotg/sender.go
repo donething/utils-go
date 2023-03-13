@@ -150,6 +150,6 @@ func EscapeMk(text string) string {
 //
 // 否则，直接发送会报错，提示需要转义，如'\#'
 func LegalMk(text string) string {
-	reg := regexp.MustCompile("([*])")
+	reg := regexp.MustCompile("([#])")
 	return reg.ReplaceAllString(text, "\\${1}")
 }
