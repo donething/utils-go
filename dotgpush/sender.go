@@ -131,7 +131,7 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 	return &msg, nil
 }
 
-// EscapeMk 转义标题中不想渲染为  Markdown V2 的字符
+// EscapeMk 转义标题中不想渲染为 Markdown V2 的字符。用于转义已经被 Markdown 字符包围的文本
 //
 // 用法：EscapeMk("测#试Markdown文本*消息*结束：") + "*[搜索](https://www.google.com/)* #标签"
 //
@@ -146,7 +146,7 @@ func EscapeMk(text string) string {
 	return reg.ReplaceAllString(text, "\\${1}")
 }
 
-// LegalMk 合法化标题中的非法 Markdown V2 字符
+// LegalMk 合法化标题中的非法 Markdown V2 字符。用于转义需要作为 Markdown 渲染的文本
 //
 // 否则，直接发送会报错，提示需要转义，如'\#'
 func LegalMk(text string) string {
