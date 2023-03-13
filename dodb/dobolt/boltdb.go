@@ -1,5 +1,7 @@
 // Package dobolt boltdb 的帮助函数
 //
+// 读写前，务必先创建桶，否则会报空指针错误
+//
 // @see https://github.com/etcd-io/bbolt
 package dobolt
 
