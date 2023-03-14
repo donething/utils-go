@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/donething/utils-go/dofile"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -42,11 +41,12 @@ type DoClient struct {
 // New 初始化 DoClient
 func New(needCookieJar bool, checkSSL bool) DoClient {
 	c := &http.Client{Transport: http.DefaultTransport}
+
 	// 超时时间
-	c.Transport.(*http.Transport).DialContext = (&net.Dialer{
-		Timeout:   0,
-		KeepAlive: 30 * time.Second,
-	}).DialContext
+	// c.Transport.(*http.Transport).DialContext = (&net.Dialer{
+	// 	Timeout:   0,
+	// 	KeepAlive: 30 * time.Second,
+	// }).DialContext
 
 	// 需要管理Cookie
 	if needCookieJar {
@@ -107,7 +107,7 @@ func (c *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	// 读取响应内容
-	bs, err := ioutil.ReadAll(resp.Body)
+	bs, err := io.ReadAll(resp.Body)
 	return bs, err
 }
 
@@ -156,7 +156,7 @@ func (c *DoClient) post(req *http.Request, headers map[string]string) ([]byte, e
 		return nil, err
 	}
 	defer resp.Body.Close()
-	bs, err := ioutil.ReadAll(resp.Body)
+	bs, err := io.ReadAll(resp.Body)
 	return bs, err
 }
 
