@@ -86,7 +86,7 @@ func New(data []byte, remotePath string, createdTime int64, req *Req) *BDFile {
 	// 文件将被分成的段数
 	blockNum := int(math.Ceil(float64(len(data)) / float64(splitSize)))
 
-	// 当文件大小小于 md5Size 时，两个 MD5 相同
+	// 当文件的大小，小于 md5Size 时，sliceMd5 为文件的 md5；大于时只取前文件的前 md5Size 个字节计算 sliceMd5
 	var contentMd5 = md5.Sum(data)
 	var sliceMd5 = contentMd5
 	if len(data) > md5Size {

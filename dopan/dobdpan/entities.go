@@ -9,8 +9,8 @@ type BDFile struct {
 	Path         string   // 文件被保存到的远程目录，如"/Pics/filename.jpg"
 	Isdir        int
 	Size         int
-	SliceMd5     string
-	ContentMd5   string
+	SliceMd5     string // 文件前 md5Size 个字节的 md5，用于快速验证服务端是否存在该文件
+	ContentMd5   string // 文件的 md5
 
 	// 可选
 	LocalCtime int64 // 创建时间
