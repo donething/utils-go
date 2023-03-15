@@ -42,11 +42,12 @@ type DoClient struct {
 func New(needCookieJar bool, checkSSL bool) DoClient {
 	c := &http.Client{Transport: http.DefaultTransport}
 
-	// 超时时间
-	// c.Transport.(*http.Transport).DialContext = (&net.Dialer{
-	// 	Timeout:   0,
-	// 	KeepAlive: 30 * time.Second,
-	// }).DialContext
+	// 设置超时时间
+	dialer := &net.Dialer{
+		Timeout:   0,
+		KeepAlive: 30 * time.Second,
+	}
+	c.Transport.(*http.Transport).DialContext = dialer.DialContext
 
 	// 需要管理Cookie
 	if needCookieJar {
