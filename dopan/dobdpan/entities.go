@@ -1,28 +1,32 @@
 package dobdpan
 
+import "io"
+
 // BDFile 网盘的文件。包含上传信息
 type BDFile struct {
-	// 每个分块的 MD5
+	// 每个分块的 MD5，create 时需要
 	BlockMD5List []string
+
 	// 所有切片的 MD5 值组成的字符串数组
-	// 由于上传大文件时，不便在 precreate 阶段获取每个切片的 md5，幸好
-	// 不知道什么原因，暂时可以设置为固定值
+	// 不知道什么原因，实际用于判断该文件是单个切片，还是有多个切片
+	//
+	// 由于上传大文件时，不便在 precreate 阶段获取每个切片的 md5，幸好暂时可以设置为固定值
 	// 当文件小于 4MB 时，设为 ["5910a591dd8fc18c32a8f3df4fdc1761"]，
 	// 大于时，设为 ["5910a591dd8fc18c32a8f3df4fdc1761","a5fc157d78e6ad1c7e114b056c92821e"]
 	BlockListMd5 string
+
 	// 文件被保存到的远程目录。以"/"开头，如"/Pics/filename.jpg"。此值在一刻相册中无效
 	RemotePath string
+
 	// 文件的字节数
 	Size int64
-	// 文件前 md5Size 个字节的 md5 值，用于快速验证服务端是否存在该文件
-	SliceMd5 string
-	// 文件的 md5 值
-	ContentMd5 string
 
 	// 可选
 	// 文件被创建时的 Unix时间戳（秒）。为 0 时 将自动设为当前 Unix 时间戳
 	LocalCtime int64
 
+	// 用于读取改文件的内容。无论改文件是 []byte、还是 File
+	Reader io.Reader
 	// 适配不同网站，手动指定的信息
 	Req *Req
 }

@@ -3,6 +3,7 @@
 package dobdpan
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -78,16 +79,14 @@ func GetTeraboxReq(cookie string) *Req {
 	}
 }
 
-// New 创建 BDFile 的实例
-//
-// 参数 data 要上传文件的二进制数据
+// NewBytes 根据文件二进制数据，创建 BDFile 的实例
 //
 // 参数 remotePath 该文件将被保存到的远程路径（可用'/'表示子文件夹）。不过一刻相册中不会区分文件夹
 //
-// 参数 createdTime 文件被创建的 Unix 时间戳（秒）。为 0 时，将自动设为当前时间戳
-//
 // 参数 req 发送请求，不同网站需要的信息。可通过 Get*Req() 快速获取指定网站的 Req 参数
-func New(remotePath string, createdTime int64, req *Req) *BDFile {
+//
+// 参数 createdTime 文件被创建的 Unix 时间戳（秒）。为 0 时，将自动设为当前时间戳
+func NewBytes(bs []byte, remotePath string, req *Req, createdTime int64) *BDFile {
 	// 其它属性
 	sec := createdTime
 	if sec == 0 {
@@ -97,28 +96,54 @@ func New(remotePath string, createdTime int64, req *Req) *BDFile {
 	// 文件对象，将返回
 	bdFile := BDFile{
 		RemotePath: remotePath,
-		Req:        req,
 		LocalCtime: sec,
+		Size:       int64(len(bs)),
+
+		Reader: bytes.NewReader(bs),
+		Req:    req,
 	}
 
 	return &bdFile
 }
 
-// UploadFile 上传文件到一刻相册
-//
-// 读取大文件 https://learnku.com/articles/23559/two-schemes-for-reading-golang-super-large-files
-func (f *BDFile) UploadFile(path string) error {
+// NewPath 根据本地文件路径，创建 BDFile 的实例
+func NewPath(path string, remotePath string, req *Req) (*BDFile, error) {
 	// 提取文件信息
 	fi, err := os.Stat(path)
 	if err != nil {
-		return err
-	}
-	f.BlockListMd5 = tagOneSeq
-	if fi.Size() > splitSize {
-		f.BlockListMd5 = tagMoreSeq
+		return nil, err
 	}
 
-	f.Size = fi.Size()
+	// 读取文件，循环发送文件的所有切片
+	// 注意在 superfile 完后，需要断言为 *File 后调用 close() 关闭 该Reader
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// 文件对象，将返回
+	bdFile := BDFile{
+		RemotePath: remotePath,
+		LocalCtime: 0,
+		Size:       fi.Size(),
+
+		Reader: file,
+		Req:    req,
+	}
+
+	return &bdFile, nil
+}
+
+// UploadFile 上传文件到一刻相册
+//
+// 读取大文件 https://learnku.com/articles/23559/two-schemes-for-reading-golang-super-large-files
+func (f *BDFile) UploadFile() error {
+	// 关闭由 os.Open() 打开的文件
+	defer func() {
+		if r, ok := f.Reader.(*os.File); ok {
+			r.Close()
+		}
+	}()
 
 	// 预创建
 	resp, err := f.precreate()
@@ -135,19 +160,14 @@ func (f *BDFile) UploadFile(path string) error {
 	}
 
 	// 云端没有该文件，需要发送
-	// 读取文件，循环发送文件的所有切片
-	sf, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer sf.Close()
+	// 循环发送文件的所有切片
 
 	// 下面会填满数据，不必 make([]byte, 0, splitSize)
 	bs := make([]byte, splitSize)
 	seq := 0
 	for {
 		// 先清空原内容
-		n, err := sf.Read(bs[:])
+		n, err := f.Reader.Read(bs[:])
 		// 读取出错
 		if n < 0 {
 			return err
@@ -176,6 +196,13 @@ func (f *BDFile) UploadFile(path string) error {
 
 // 1. 预处理数据文件
 func (f *BDFile) precreate() (*PreResp, error) {
+	// 设置该文件是单个切片，还是有多个切片
+	if f.Size <= splitSize {
+		f.BlockListMd5 = tagOneSeq
+	} else {
+		f.BlockListMd5 = tagMoreSeq
+	}
+
 	// 创建表单
 	// "rtype"的值需要为"3"（覆盖文件）
 	form := url.Values{}
