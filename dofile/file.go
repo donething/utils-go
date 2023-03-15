@@ -3,9 +3,9 @@ package dofile
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -29,7 +29,7 @@ func Read(path string) ([]byte, error) {
 		return nil, err
 	}
 	defer fi.Close()
-	return ioutil.ReadAll(fi)
+	return io.ReadAll(fi)
 }
 
 // Write 向文件写内容
@@ -111,32 +111,6 @@ func IsDir(path string) (bool, error) {
 	return fi.IsDir(), nil
 }
 
-// Md5 返回文件MD5值
-func Md5(path string) (string, error) {
-	isdir, err := IsDir(path)
-	if err != nil {
-		return "", err
-	}
-	if isdir {
-		return "", fmt.Errorf("目标为目录")
-	}
-
-	out, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	md5hash := md5.New()
-	if _, err = io.Copy(md5hash, out); err != nil {
-		return "", err
-	}
-
-	m5 := md5hash.Sum(nil)
-	md5Str := fmt.Sprintf("%x", m5)
-	return md5Str, nil
-}
-
 // OpenAs 根据文件类型，选择合适的程序打开文件
 //
 // 来源 https://gist.github.com/hyg/9c4afcd91fe24316cbf0
@@ -188,4 +162,35 @@ func ShowInExplorer(path string) error {
 func ValidFileName(src string, repl string) string {
 	var reg = regexp.MustCompile(`[<>:"/\\|?*]`)
 	return reg.ReplaceAllString(src, repl)
+}
+
+// Md5 计算文件的 md5
+//
+// @see https://notes.sxyz.blog/golang/large-file-md5.html
+func Md5(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash, buf := md5.New(), make([]byte, 1<<20)
+	for {
+		n, err := file.Read(buf)
+		// 读取出错
+		if n < 0 {
+			return "", err
+		}
+		// 已读完
+		if n == 0 {
+			break
+		}
+
+		_, err = io.Copy(hash, bytes.NewReader(buf[:n]))
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

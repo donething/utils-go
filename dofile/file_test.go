@@ -6,37 +6,6 @@ import (
 	"testing"
 )
 
-func TestMd5(t *testing.T) {
-	type args struct {
-		path string
-	}
-	tests := []struct {
-		name       string
-		args       args
-		wantMd5Str string
-		wantErr    bool
-	}{
-		{
-			"Test md5",
-			args{"E:/Temp/20190226_PolarBearDay_ZH-CN5185516722_1920x1080.jpg"},
-			"bf9d0939df1039e2893b1004d5a169d7",
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotMd5Str, err := Md5(tt.args.path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Md5() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotMd5Str != tt.wantMd5Str {
-				t.Errorf("Md5() = %v, want %v", gotMd5Str, tt.wantMd5Str)
-			}
-		})
-	}
-}
-
 func Test_isDir(t *testing.T) {
 	type args struct {
 		path string
@@ -234,5 +203,37 @@ func TestOpenAs(t *testing.T) {
 	err := OpenAs(`D:/1925 年北洋“中国丧失领土领海图.jpg`)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestMD5(t *testing.T) {
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "测试",
+			args:    args{path: "D:/Tmp/VpsGo/video.mkv"},
+			want:    "484e19309253d455917ff1bae9de04d3",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Md5(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Md5() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Md5() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
