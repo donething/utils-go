@@ -55,7 +55,7 @@ func TestUploadTerabox(t *testing.T) {
 }
 
 func TestDelAll(t *testing.T) {
-	err := DelAll(nil, "")
+	err := DelAll(nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -36,7 +36,8 @@ func GetYikeReq(cookie string, bdstoken string) *Req {
 			"clienttype=70&bdstoken=%s", bdstoken),
 		ListURL: fmt.Sprintf("https://photo.baidu.com/youai/file/v1/list?clienttype=70&"+
 			"need_thumbnail=1&need_filter_hidden=0&bdstoken=%s", bdstoken),
-		DelURL: "https://photo.baidu.com/youai/file/v1/delete?clienttype=70&bdstoken=%s&fsid_list=%s",
+		DelURL: fmt.Sprintf("https://photo.baidu.com/youai/file/v1/delete?clienttype=70&"+
+			"bdstoken=%s&fsid_list=%s", bdstoken, "%s"),
 
 		Headers: map[string]string{
 			"UserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
@@ -264,7 +265,7 @@ func (f *BDFile) create(uploadid string) error {
 }
 
 // DelAll 删除所有文件
-func DelAll(req *Req, bdstoken string) error {
+func DelAll(req *Req) error {
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for {
@@ -294,7 +295,7 @@ func DelAll(req *Req, bdstoken string) error {
 			return fmt.Errorf("序列化文件的 ID 列表时出错：%w", err)
 		}
 
-		u := fmt.Sprintf(req.DelURL, bdstoken, string(bs))
+		u := fmt.Sprintf(req.DelURL, string(bs))
 		bs, err = client.Get(u, req.Headers)
 		if err != nil {
 			return fmt.Errorf("删除文件出错：%w", err)
