@@ -64,6 +64,24 @@ func New(needCookieJar bool, checkSSL bool) DoClient {
 	return DoClient{c}
 }
 
+// SetInitCookie 设置初始 Cookie
+//
+// host 域名。如"http://127.0.0.1:23047/"
+//
+// cookies Cookies 数组。如
+// cookie1 := &http.Cookie{Name: "mycookie1", Value: "myvalue1", Path: "/"}
+// cookie2 := &http.Cookie{Name: "mycookie2", Value: "myvalue2", Path: "/"}
+// 传递 []*http.Cookie{cookie1, cookie2}
+func (c *DoClient) SetInitCookie(host string, cookies []*http.Cookie) error {
+	u, err := url.Parse(host)
+	if err != nil {
+		return err
+	}
+
+	c.Jar.SetCookies(u, cookies)
+	return nil
+}
+
 // SetProxy 设置代理
 //
 // 参数 proxyStr string 代理地址，如"http://127.0.0.1:1081"、"socks5://127.0.0.1:1080"等
