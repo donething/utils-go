@@ -186,6 +186,8 @@ func Md5(path string) (string, error) {
 			break
 		}
 
+		// 注意不能直接用 buf，必须 buf[:n]
+		// 因为每次读取并没有清空 buf，当读取的字节不足 n 时，会多余的写入上次的数据
 		_, err = io.Copy(hash, bytes.NewReader(buf[:n]))
 		if err != nil {
 			return "", err
