@@ -1,5 +1,10 @@
 package dolive
 
+const (
+	// SizeOneGB 1 GB 字节
+	SizeOneGB = 1024 * 1024 * 1024
+)
+
 // BiliHeader 哔哩哔哩直播的请求头
 var BiliHeader = map[string]string{
 	// referer 必不可少

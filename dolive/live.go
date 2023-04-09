@@ -42,7 +42,7 @@ var client = dohttp.New(false, false)
 
 // New 创建 Live 实例
 //
-// 参数 fLsize 单个文件的最大字节数，为 0 表示无限制。建议 1GB: 1024*1024*1024
+// 参数 fLsize 单个文件的最大字节数，为 0 表示无限制。建议 SizeOneGB (1024*1024*1024)
 func New(url string, path string, fLSize int) *Live {
 	dir := filepath.Dir(path)
 	ext := filepath.Ext(path)
@@ -61,7 +61,9 @@ func New(url string, path string, fLSize int) *Live {
 }
 
 // Capture 捕获直播流到视频文件
-func (l *Live) Capture(headers map[string]string) error {
+//
+// 参数 deal 处理捕获的视频文件的回调函数，参数为文件的路径
+func (l *Live) Capture(headers map[string]string, deal func(path string) error) error {
 	// 打开直播流
 	req, err := http.NewRequest("GET", l.URL, nil)
 	if err != nil {
@@ -105,7 +107,15 @@ func (l *Live) Capture(headers map[string]string) error {
 
 			// 递归实现转到新文件存储视频
 			// 重读直播流是因为新文件头需要视频信息，不然通过引入 ffmpeg 等直播捕获完毕后再切割，限制太大
-			return l.Capture(headers)
+			if len(l.Paths) >= 2 && l.FLSize != 0 {
+				// 此处处理上一个下载完毕的视频
+				err := deal(l.Paths[l.Total/(l.FLSize)-1])
+				if err != nil {
+					return err
+				}
+
+				return l.Capture(headers, deal)
+			}
 		}
 
 		// 复制流到文件
@@ -118,7 +128,8 @@ func (l *Live) Capture(headers map[string]string) error {
 		l.Total += n
 	}
 
-	return nil
+	// 此处处理最后一个视频（不分段时的整个视频，分段时的最后一个视频）
+	return deal(l.Paths[len(l.Paths)-1])
 }
 
 // 首次或更换文件写入数据前，需要创建新的文件流
