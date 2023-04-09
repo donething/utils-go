@@ -102,6 +102,10 @@ func (l *Live) Capture(headers map[string]string) error {
 			if err != nil {
 				return err
 			}
+
+			// 递归实现转到新文件存储视频
+			// 重读直播流是因为新文件头需要视频信息，不然通过引入 ffmpeg 等直播捕获完毕后再切割，限制太大
+			return l.Capture(headers)
 		}
 
 		// 复制流到文件
