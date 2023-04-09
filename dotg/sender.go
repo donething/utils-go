@@ -75,7 +75,7 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 	form := make(map[string]string)
 	form["chat_id"] = chatID
 
-	// 当 album 为本地文件（二进制数据），需要作为文件发送
+	// 当 album 二进制数据，需要作为文件发送
 	filesList := make(map[string]interface{})
 	for i, m := range album {
 		// 设置 Caption 的解析模式，默认"MarkdownV2"
