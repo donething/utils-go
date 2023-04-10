@@ -14,3 +14,12 @@ func RandInt(min, max int) int {
 	// 获取[min,max]之间的随机整数
 	return r.Intn(max-min+1) + min
 }
+
+// RandFloat 生成小数随机数
+func RandFloat() float64 {
+	// 创建一个随机数生成器
+	randGenerator := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	// 生成 10 位小数
+	return randGenerator.Float64()
+}
