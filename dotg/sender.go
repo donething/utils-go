@@ -170,7 +170,7 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 // 参考：https://core.telegram.org/bots/api#markdownv2-style
 func EscapeMk(text string) string {
 	// 已替换'['，就不用替换']'了
-	reg := regexp.MustCompile("([_*\\[()~`>#+\\-=|{}.!])")
+	reg := regexp.MustCompile("([_*\\[\\]()~`>#+\\-=|{}.!])")
 	return reg.ReplaceAllString(text, "\\${1}")
 }
 
