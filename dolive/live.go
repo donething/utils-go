@@ -15,7 +15,9 @@ import (
 )
 
 // Live 用 New() 创建实例后使用
-type Live struct {
+//
+// 泛型为需要传递的额外信息（如主播的信息），便于 `deal()`接收后使用
+type Live[T any] struct {
 	// 直播流的地址
 	URL string
 
@@ -43,13 +45,17 @@ var client = dohttp.New(false, false)
 // New 创建 Live 实例
 //
 // 参数 fLsize 单个文件的最大字节数，为 0 表示无限制。建议 SizeOneGB (1024*1024*1024)
-func New(url string, path string, fLSize int) *Live {
+//
+// 泛型为需要传递的额外信息（如主播的信息），便于 `deal()`接收后使用
+//
+// dolive.New[Anchor](url, "/Tmp/live.flv", 10*1024*1024)
+func New[T any](url string, path string, fLSize int) *Live[T] {
 	dir := filepath.Dir(path)
 	ext := filepath.Ext(path)
 	name := strings.TrimRight(filepath.Base(path), ext)
 	format := strings.Replace(ext, ".", "", 1)
 
-	live := Live{
+	live := Live[T]{
 		URL:     url,
 		FDir:    dir,
 		FName:   name,
@@ -62,8 +68,8 @@ func New(url string, path string, fLSize int) *Live {
 
 // Capture 捕获直播流到视频文件
 //
-// 参数 deal 处理捕获的视频文件的回调函数，参数为文件的路径
-func (l *Live) Capture(headers map[string]string, deal func(path string) error) error {
+// 参数 deal 处理捕获的视频的回调函数，其参数为文件的路径、和需要传递的数据（泛型）
+func (l *Live[T]) Capture(headers map[string]string, data T, deal func(path string, data T) error) error {
 	// 打开直播流
 	req, err := http.NewRequest("GET", l.URL, nil)
 	if err != nil {
@@ -108,12 +114,12 @@ func (l *Live) Capture(headers map[string]string, deal func(path string) error) 
 			// 重读直播流是因为新文件头需要视频信息，不然通过引入 ffmpeg 等直播捕获完毕后再切割，限制太大
 			if len(l.Paths) >= 2 && l.FLSize != 0 {
 				// 此处处理上一个下载完毕的视频
-				err := deal(l.Paths[l.Total/(l.FLSize)-1])
+				err := deal(l.Paths[l.Total/(l.FLSize)-1], data)
 				if err != nil {
 					return err
 				}
 
-				return l.Capture(headers, deal)
+				return l.Capture(headers, data, deal)
 			}
 		}
 
@@ -128,11 +134,11 @@ func (l *Live) Capture(headers map[string]string, deal func(path string) error) 
 	}
 
 	// 此处处理最后一个视频（不分段时的整个视频，分段时的最后一个视频）
-	return deal(l.Paths[len(l.Paths)-1])
+	return deal(l.Paths[len(l.Paths)-1], data)
 }
 
 // 首次或更换文件写入数据前，需要创建新的文件流
-func (l *Live) createFileStream() error {
+func (l *Live[T]) createFileStream() error {
 	// 首先，关闭上个文件流
 	l.closeCurFile()
 
@@ -164,7 +170,7 @@ func (l *Live) createFileStream() error {
 }
 
 // 关闭当前文件流
-func (l *Live) closeCurFile() {
+func (l *Live[T]) closeCurFile() {
 	if l.Cur != nil {
 		l.Cur.Close()
 	}
