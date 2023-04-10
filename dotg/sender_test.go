@@ -51,7 +51,7 @@ func TestSendMediaGroup(t *testing.T) {
 
 	// 发送本地文件
 
-	f1, err := dofile.Read("C:/Users/Do/Downloads/343311_large.png")
+	f1, err := dofile.Read("D:/Tmp/VpsGo/uploads/abc.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}

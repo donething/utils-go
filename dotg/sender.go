@@ -16,30 +16,47 @@ import (
 
 // TGBot TG 推送发送消息的机器人实例
 type TGBot struct {
+	// TG Token
 	token string
-}
 
-const (
 	// API
-	urlSendMsg        = "https://api.telegram.org/%s/sendMessage"
-	urlSendMediaGroup = "https://api.telegram.org/%s/sendMediaGroup"
-)
+	addr string
+}
 
 var (
 	client = dohttp.New(false, false)
+)
+
+const (
+	urlSendMsg        = "%s/%s/sendMessage"
+	urlSendMediaGroup = "%s/%s/sendMediaGroup"
 )
 
 // NewTGBot 创建新的 Telegram 推送机器人
 //
 // token 新机器人的 token
 func NewTGBot(token string) *TGBot {
-	return &TGBot{token: "bot" + token}
+	return &TGBot{
+		// TG Token
+		token: "bot" + token,
+
+		// 默认 addr
+		addr: "https://api.telegram.org",
+	}
 }
 
 // SetProxy 设置网络代理
+//
 // 格式参考 dohttp.ProxySocks5、dohttp.ProxyHttp
 func (bot *TGBot) SetProxy(proxyStr string) error {
 	return client.SetProxy(proxyStr)
+}
+
+// SetHost 设置域名。开启 telegram-bot-api 本地服务时，可用本地服务地址
+//
+// addr 如 "http://127.0.0.1:12345"
+func (bot *TGBot) SetHost(addr string) {
+	bot.addr = addr
 }
 
 // SendMessage 发送Markdown文本消息
@@ -51,7 +68,7 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 		"text":       []string{text},
 		"parse_mode": []string{"MarkdownV2"},
 	}
-	bs, err := client.PostForm(fmt.Sprintf(urlSendMsg, bot.token), form.Encode(), nil)
+	bs, err := client.PostForm(fmt.Sprintf(urlSendMsg, bot.addr, bot.token), form.Encode(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +81,10 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 
 // SendMediaGroup 发送一个媒体集
 //
-// 当只设置第一个媒体元素的`Caption`时，将作为该集的标题来显示
+// 因为 api 的文件大小限制，若需发送大文件，可以运行本地 TG 服务，传递大文件的路径来发送
+// @see https://stackoverflow.com/a/75012096
+//
+// *只设置第一个媒体的`Caption`时，将作为该集的标题*
 //
 // 注意使用 EscapeMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
 func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error) {
@@ -103,7 +123,8 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 	mediaStr, _ := json.Marshal(newAlbum)
 	form["media"] = string(mediaStr)
 
-	bs, err := client.PostFiles(fmt.Sprintf(urlSendMediaGroup, bot.token), filesList, form, nil)
+	bs, err := client.PostFiles(fmt.Sprintf(urlSendMediaGroup, bot.addr, bot.token),
+		filesList, form, nil)
 	if err != nil {
 		return nil, err
 	}
