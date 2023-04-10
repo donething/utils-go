@@ -99,7 +99,6 @@ func (l *Live) Capture(headers map[string]string, deal func(path string) error) 
 
 		// 打开文件流
 		if len(l.Paths) == 0 || (l.FLSize != 0 && l.Total > l.FLSize*len(l.Paths)) {
-			fmt.Printf("写入第 %d 个文件\n", len(l.Paths)+1)
 			err = l.createFileStream()
 			if err != nil {
 				return err
