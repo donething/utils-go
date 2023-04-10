@@ -52,10 +52,10 @@ func (bot *TGBot) SetProxy(proxyStr string) error {
 	return client.SetProxy(proxyStr)
 }
 
-// SetHost 设置域名。开启 telegram-bot-api 本地服务时，可用本地服务地址
+// SetAddr 设置域名。开启 telegram-bot-api 本地服务时，可用本地服务地址
 //
 // addr 如 "http://127.0.0.1:12345"
-func (bot *TGBot) SetHost(addr string) {
+func (bot *TGBot) SetAddr(addr string) {
 	bot.addr = addr
 }
 
@@ -81,12 +81,14 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 
 // SendMediaGroup 发送一个媒体集
 //
-// 因为 api 的文件大小限制，若需发送大文件，可以运行本地 TG 服务，传递大文件的路径来发送
-// @see https://stackoverflow.com/a/75012096
-//
 // *只设置第一个媒体的`Caption`时，将作为该集的标题*
 //
 // 注意使用 EscapeMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
+//
+// 因为原生 api 限制发送文件的大小，若需发送大文件，可以运行本地 TG 服务,
+// 设置 tg.SetAddr("http://127.0.0.1:1234")后，传递大文件的路径(file:///home/output.mp4)来发送
+// @see https://stackoverflow.com/a/75012096
+// @see https://hdcola.medium.com/telegram-bot-api-server%E4%BD%9C%E5%BC%8A%E6%9D%A1-301d40bd65ba
 func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error) {
 	// 避免改动原数据，以免重试发送时丢失二进制文件数据
 	var newAlbum = make([]Media, 0, len(album))
@@ -147,6 +149,11 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 		fmt.Printf("由于速率限制，等待 %d 秒后重新发送\n", sec)
 		time.Sleep(time.Duration(sec+1) * time.Second)
 		return bot.SendMediaGroup(chatID, album)
+	}
+
+	// 发送失败
+	if !msg.Ok {
+		return &msg, fmt.Errorf("%d %s", msg.ErrorCode, msg.Description)
 	}
 
 	return &msg, nil
