@@ -89,40 +89,31 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 // 设置 tg.SetAddr("http://127.0.0.1:1234")后，传递大文件的路径(file:///home/output.mp4)来发送
 // @see https://stackoverflow.com/a/75012096
 // @see https://hdcola.medium.com/telegram-bot-api-server%E4%BD%9C%E5%BC%8A%E6%9D%A1-301d40bd65ba
-func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error) {
-	// 避免改动原数据，以免重试发送时丢失二进制文件数据
-	var newAlbum = make([]Media, 0, len(album))
-
+func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message, error) {
 	// 其它属性
 	form := make(map[string]string)
 	form["chat_id"] = chatID
 
-	// 当 album 二进制数据，需要作为文件发送
+	// 当 medias 二进制数据，需要作为文件发送
 	filesList := make(map[string]interface{})
-	for i, m := range album {
+	for i, m := range medias {
 		// 设置 Caption 的解析模式，默认"MarkdownV2"
-		parseMode := "MarkdownV2"
-		if m.ParseMode != "" {
-			parseMode = m.ParseMode
-		}
-		n := Media{
-			Type:      m.Type,
-			Media:     m.Media,
-			Caption:   m.Caption,
-			ParseMode: parseMode,
+		if m.ParseMode == "" {
+			m.ParseMode = "MarkdownV2"
 		}
 
 		// 此时需要在表单中加入该数据的指向标志
-		if bs, ok := n.Media.([]byte); ok {
-			n.Media = fmt.Sprintf("attach://%d", i)
+		if bs, ok := m.Media.([]byte); ok {
+			m.Media = fmt.Sprintf("attach://%d", i)
 			filesList[fmt.Sprintf("%d", i)] = bs
 		}
-
-		newAlbum = append(newAlbum, n)
 	}
 
-	// 将 album 序列化后作为表单"media"的值发送
-	mediaStr, _ := json.Marshal(newAlbum)
+	// 将 medias 序列化后作为表单"media"的值发送
+	mediaStr, err := json.Marshal(medias)
+	if err != nil {
+		return nil, err
+	}
 	form["media"] = string(mediaStr)
 
 	bs, err := client.PostFiles(fmt.Sprintf(urlSendMediaGroup, bot.addr, bot.token),
@@ -148,7 +139,7 @@ func (bot *TGBot) SendMediaGroup(chatID string, album []Media) (*Message, error)
 
 		fmt.Printf("由于速率限制，等待 %d 秒后重新发送\n", sec)
 		time.Sleep(time.Duration(sec+1) * time.Second)
-		return bot.SendMediaGroup(chatID, album)
+		return bot.SendMediaGroup(chatID, medias)
 	}
 
 	// 发送失败

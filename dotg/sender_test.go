@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"github.com/donething/utils-go/dofile"
 	"github.com/donething/utils-go/dohttp"
+	"os"
 	"testing"
 )
 
 var (
-	tg     = NewTGBot("xxx")
-	chatID = "yyy"
+	tg     = NewTGBot(os.Getenv("MY_TG_TOKEN"))
+	chatID = os.Getenv("MY_TG_CHAT_LIVE")
 )
 
 func init() {
@@ -31,15 +32,15 @@ func TestTGBot_SendMessage(t *testing.T) {
 func TestSendMediaGroup(t *testing.T) {
 	// 发送远程文件
 	/*
-		msg, err := tg.SendMediaGroup(chatID, []Media{
+		msg, err := tg.SendMediaGroup(chatID, []InputMedia{
 			{
 				Type:    Photo,
-				Media:   "https://cdn.v2ex.com/avatar/b600/b4a3/49950_large.png?m=1456725848",
+				InputMedia:   "https://cdn.v2ex.com/avatar/b600/b4a3/49950_large.png?m=1456725848",
 				Caption: "头像1",
 			},
 			{
 				Type:    Photo,
-				Media:   "https://cdn.v2ex.com/gravatar/4598134cecabd98904511e065adca226?s=48",
+				InputMedia:   "https://cdn.v2ex.com/gravatar/4598134cecabd98904511e065adca226?s=48",
 				Caption: "头像2",
 			},
 		})
@@ -56,7 +57,7 @@ func TestSendMediaGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	medias := []Media{
+	medias := []*InputMedia{
 		{
 			Type:    TypePhoto,
 			Media:   f1,
@@ -73,6 +74,27 @@ func TestSendMediaGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("发送本地文件的结果：%+v\n", *msg)
+}
+
+func TestSendVideo(t *testing.T) {
+	bs, err := os.ReadFile("D:/Tmp/live/bili_8739477_1681227533414_01.mp4")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m := &InputMedia{
+		Type:              TypeVideo,
+		Media:             bs,
+		Caption:           "测试流媒体，可播放",
+		ParseMode:         "",
+		SupportsStreaming: true,
+	}
+
+	msg, err := tg.SendMediaGroup(chatID, []*InputMedia{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%+v\n", msg)
 }
 
 func TestReplaceMk(t *testing.T) {
