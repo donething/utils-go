@@ -8,3 +8,5 @@ dbtest.db
 
 test_conf.json
 test_conf.json.bak
+
+logger_test.log
