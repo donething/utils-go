@@ -6,8 +6,7 @@ import (
 )
 
 func TestInitLog(t *testing.T) {
-	i, w, e, err := InitLog("./logger_test.log", 0, false)
-	CkPanic(err)
+	i, w, e := InitLog(0)
 
 	tick := time.Tick(3 * time.Second)
 	for range tick {
