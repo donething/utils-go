@@ -84,13 +84,13 @@ func TestGet(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Test Get 1",
+			name:    "Test GetBytes 1",
 			args:    args{key: []byte("test123")},
 			want:    []byte("test123测试123"),
 			wantErr: false,
 		},
 		{
-			name:    "Test Get 2",
+			name:    "Test GetBytes 2",
 			args:    args{key: []byte("test2")},
 			want:    []byte("test222"),
 			wantErr: false,
@@ -100,11 +100,11 @@ func TestGet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := db.Get(tt.args.key)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetBytes() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Get() got = %v, want %v", got, tt.want)
+				t.Errorf("GetBytes() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

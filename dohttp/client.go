@@ -99,7 +99,7 @@ func (c *DoClient) SetProxy(proxyStr string) error {
 
 // Exec 执行请求
 //
-// 此函数没有关闭 response.Body
+// 需要**自行关闭**响应体 `resp.Close()`
 func (c *DoClient) Exec(req *http.Request, headers map[string]string) (*http.Response, error) {
 	// 设置请求头
 	if headers != nil {
@@ -112,19 +112,33 @@ func (c *DoClient) Exec(req *http.Request, headers map[string]string) (*http.Res
 	return c.Do(req)
 }
 
-// Get 执行Get请求
-func (c *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
+// Get 读取响应
+//
+// 需要**自行关闭**响应体 `resp.Close()`
+func (c *DoClient) Get(url string, headers map[string]string) (*http.Response, error) {
 	// 生成请求
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	// 执行请求
 	resp, err := c.Exec(req, headers)
 	if err != nil {
 		return nil, err
 	}
+
+	return resp, nil
+}
+
+// GetBytes 执行Get请求
+func (c *DoClient) GetBytes(url string, headers map[string]string) ([]byte, error) {
+	resp, err := c.Get(url, headers)
+	if err != nil {
+		return nil, err
+	}
 	defer resp.Body.Close()
+
 	// 读取响应内容
 	bs, err := io.ReadAll(resp.Body)
 	return bs, err
@@ -132,7 +146,7 @@ func (c *DoClient) Get(url string, headers map[string]string) ([]byte, error) {
 
 // GetText 读取文本类型
 func (c *DoClient) GetText(url string, headers map[string]string) (string, error) {
-	bs, err := c.Get(url, headers)
+	bs, err := c.GetBytes(url, headers)
 	return string(bs), err
 }
 

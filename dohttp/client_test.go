@@ -5,12 +5,11 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 )
 
 // 妖火cookie中的sid，如下格式
 var yaohuoSid = ""
-var client = New(10*time.Second, true, false)
+var client = New(true, false)
 
 func TestProxy(t *testing.T) {
 	err := client.SetProxy("socks5://127.0.0.1:1080")
@@ -113,9 +112,9 @@ func TestPostFile(t *testing.T) {
 	t.Log(string(bs))
 
 	// 发送远程文件
-	bs1, _ := client.Get("https://cdn.v2ex.com/gravatar/4598134cecabd98904511e065adca226?s=48&d=retro",
+	bs1, _ := client.GetBytes("https://cdn.v2ex.com/gravatar/4598134cecabd98904511e065adca226?s=48&d=retro",
 		nil)
-	bs2, _ := client.Get("https://cdn.v2ex.com/gravatar/ff349a0ec97ea9e36b5aab456a38dbf2?s=48&d=retro",
+	bs2, _ := client.GetBytes("https://cdn.v2ex.com/gravatar/ff349a0ec97ea9e36b5aab456a38dbf2?s=48&d=retro",
 		nil)
 	bs, err = client.PostFiles("http://127.0.0.1:10000/upload", map[string]interface{}{
 		"11": bs1,
@@ -184,6 +183,115 @@ func TestDoClient_Download(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("Download() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDoClient_Get(t *testing.T) {
+	type args struct {
+		url     string
+		headers map[string]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int
+		wantErr bool
+	}{
+		{
+			name: "Example Domain",
+			args: args{
+				url:     "https://www.example.com/",
+				headers: nil,
+			},
+			want:    200,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := client.Get(tt.args.url, tt.args.headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if got.StatusCode != tt.want {
+				t.Errorf("Get() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDoClient_GetText(t *testing.T) {
+	type args struct {
+		url     string
+		headers map[string]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "Example Domain",
+			args: args{
+				url:     "https://www.example.com/",
+				headers: nil,
+			},
+			want:    "Example Domain",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := client.GetText(tt.args.url, tt.args.headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetText() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !strings.Contains(got, tt.want) {
+				t.Errorf("GetText() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDoClient_GetBytes(t *testing.T) {
+	type args struct {
+		url     string
+		headers map[string]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "Example Domain",
+			args: args{
+				url:     "https://www.example.com/",
+				headers: nil,
+			},
+			want:    []byte("Example Domain"),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := client.GetBytes(tt.args.url, tt.args.headers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetBytes() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !strings.Contains(string(got), string(tt.want)) {
+				t.Errorf("GetBytes() got = %v, want %v", string(got), string(tt.want))
 			}
 		})
 	}

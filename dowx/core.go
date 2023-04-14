@@ -25,7 +25,7 @@ func (c *Core) getToken(url string) error {
 	}
 
 	// 需要重新获取
-	bs, err := client.Get(url, nil)
+	bs, err := client.GetBytes(url, nil)
 	if err != nil {
 		return err
 	}

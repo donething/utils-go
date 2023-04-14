@@ -83,7 +83,7 @@ func GetTeraboxReq(cookie string) *Req {
 //
 // 参数 remotePath 该文件将被保存到的远程路径（可用'/'表示子文件夹）。不过一刻相册中不会区分文件夹
 //
-// 参数 req 发送请求，不同网站需要的信息。可通过 Get*Req() 快速获取指定网站的 Req 参数
+// 参数 req 发送请求，不同网站需要的信息。可通过 GetBytes*Req() 快速获取指定网站的 Req 参数
 //
 // 参数 createdTime 文件被创建的 Unix 时间戳（秒）。为 0 时，将自动设为当前时间戳
 func NewBytes(bs []byte, remotePath string, req *Req, createdTime int64) *BDFile {
@@ -303,7 +303,7 @@ func DelAll(req *Req) error {
 
 	for {
 		// 列出文件
-		bs, err := client.Get(req.ListURL, req.Headers)
+		bs, err := client.GetBytes(req.ListURL, req.Headers)
 		if err != nil {
 			return fmt.Errorf("列出文件出错：%w", err)
 		}
@@ -329,7 +329,7 @@ func DelAll(req *Req) error {
 		}
 
 		u := fmt.Sprintf(req.DelURL, string(bs))
-		bs, err = client.Get(u, req.Headers)
+		bs, err = client.GetBytes(u, req.Headers)
 		if err != nil {
 			return fmt.Errorf("删除文件出错：%w", err)
 		}

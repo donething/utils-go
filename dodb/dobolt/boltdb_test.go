@@ -62,11 +62,11 @@ func TestGet(t *testing.T) {
 			got, err := db.Get(tt.args.key, tt.args.bucket)
 			fmt.Printf("获取的数据：%s\n", got)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetBytes() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Get() got = %v, want %v", got, tt.want)
+				t.Errorf("GetBytes() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
