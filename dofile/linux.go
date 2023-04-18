@@ -13,7 +13,7 @@ import (
 // 参考 https://stackoverflow.com/a/60724929
 func GetDriverInfo(path string) (free uint64, total uint64, avail uint64, err error) {
 	if path == "" {
-		wd, err = syscall.Getwd()
+		path, err = syscall.Getwd()
 		if err != nil {
 			return
 		}
