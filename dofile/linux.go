@@ -20,7 +20,7 @@ func GetDriverInfo(path string) (free uint64, total uint64, avail uint64, err er
 	}
 
 	var stat syscall.Statfs_t
-	err = syscall.Statfs(wd, &stat)
+	err = syscall.Statfs(path, &stat)
 	if err != nil {
 		return
 	}
