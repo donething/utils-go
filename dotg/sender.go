@@ -250,8 +250,10 @@ func LegalMk(text string) string {
 // fileSizeThreshold 设置视频分段的的字节数，为 0 不分段
 //
 // tmpDir 设置临时文件的目录（为空""则在文件同目录）
+//
+// reserve 是否保留原文件（或转码后的视频文件）
 func (bot *TGBot) SendVideo(chatID string, title string, path string,
-	fileSizeThreshold int64, tmpDir string) error {
+	fileSizeThreshold int64, tmpDir string, reserve bool) error {
 	tag := "SendVideo"
 	// 发送完后，删除临时文件
 	var delFiles = make(map[string]string)
@@ -281,10 +283,16 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 		}
 
 		medias[i] = media
+		// 封面图，需要删除
 		delFiles[thumb] = ""
+		// 分段大于2，说明是切割后的视频列表，发送成功后需要删除
 		if len(dstPaths) >= 2 {
 			delFiles[dst] = ""
 			delFiles[p] = ""
+		}
+		// 不保留原文件，删除
+		if !reserve {
+			delFiles[path] = ""
 		}
 	}
 
