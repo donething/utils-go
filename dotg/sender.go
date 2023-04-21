@@ -142,6 +142,10 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 			}
 		}
 
+		// 设置默认的标题解析模式 MarkdownV2
+		if m.MediaData.ParseMode == "" {
+			m.MediaData.ParseMode = "MarkdownV2"
+		}
 		mediaForm := MediaForm{
 			MediaData: m.MediaData,
 			Media:     fmt.Sprintf("attach://media%d", i),
