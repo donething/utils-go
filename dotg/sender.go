@@ -277,12 +277,21 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 	// 需要发送媒体
 	var medias = make([]*InputMedia, len(dstPaths))
 	for i, p := range dstPaths {
-		media, dst, thumb, err := GenTgMedia(p, fmt.Sprintf("%s P%02d", title, i+1))
+		// 多分段时，加上 Pn 标识
+		caption := ""
+		if len(dstPaths) == 1 {
+			caption = title
+		} else {
+			caption = fmt.Sprintf("%s P%02d", title, i+1)
+		}
+
+		// 创建媒体信息
+		media, dst, thumb, err := GenTgMedia(p, caption)
 		if err != nil {
 			return fmt.Errorf("[%s]生成媒体信息：%w", tag, err)
 		}
-
 		medias[i] = media
+
 		// 封面图，需要删除
 		delFiles[thumb] = ""
 		// 分段大于2，说明是切割后的视频列表，发送成功后需要删除
