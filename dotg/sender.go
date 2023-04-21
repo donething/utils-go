@@ -277,18 +277,17 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 	// 需要发送媒体
 	var medias = make([]*InputMedia, len(dstPaths))
 	for i, p := range dstPaths {
-		// 多分段时，加上 Pn 标识
-		caption := ""
-		if len(dstPaths) == 1 {
-			caption = title
-		} else {
-			caption = fmt.Sprintf("%s P%02d", title, i+1)
-		}
-
 		// 创建媒体信息
-		media, dst, thumb, err := GenTgMedia(p, caption)
+		media, dst, thumb, err := GenTgMedia(p, "")
 		if err != nil {
 			return fmt.Errorf("[%s]生成媒体信息：%w", tag, err)
+		}
+		if i == 0 {
+			media.Caption = title
+		}
+		// 多分段时，加上 Pn 标识
+		if len(dstPaths) >= 2 {
+			media.Name = fmt.Sprintf("P%02d", i+1)
 		}
 		medias[i] = media
 
