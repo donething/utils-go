@@ -16,7 +16,7 @@ import (
 // maxSegSize 单位字节
 //
 // 当 dstPath 目标路径为空""时，默认保存到视频的同目录下
-func Cut(path string, maxSegSize int64, dstDir string) error {
+func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
 	// 默认保存到视频的同目录下
 	if strings.TrimSpace(dstDir) == "" {
 		dstDir = filepath.Dir(path)
@@ -24,12 +24,12 @@ func Cut(path string, maxSegSize int64, dstDir string) error {
 
 	err := os.MkdirAll(dstDir, 0755)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	file, err := os.Stat(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 计算分段数
@@ -37,7 +37,7 @@ func Cut(path string, maxSegSize int64, dstDir string) error {
 
 	seconds, err := GetDuration(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 每个分段的时长（秒）
@@ -59,10 +59,16 @@ func Cut(path string, maxSegSize int64, dstDir string) error {
 	cmd := exec.Command("ffmpeg", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%w: %s", err, string(output))
+		return nil, fmt.Errorf("%w: %s", err, string(output))
 	}
 
-	return nil
+	// 用于返回路径的数组
+	dstPaths := make([]string, n)
+	for i := 0; i < n; i++ {
+		dstPaths[i] = filepath.Join(dstDir, fmt.Sprintf("%s_%02d.mp4", name, i+1))
+	}
+
+	return dstPaths, nil
 }
 
 // Convt 转换编码
