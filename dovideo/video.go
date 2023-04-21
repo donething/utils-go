@@ -71,7 +71,12 @@ func Cut(path string, maxSegSize int64, dstDir string) error {
 func Convt(path string, dstPath string) error {
 	// 默认转码为".mp4"，并保存到视频同目录下
 	if strings.TrimSpace(dstPath) == "" {
-		dstPath = strings.TrimSuffix(path, filepath.Ext(path)) + ".mp4"
+		ext := filepath.Ext(path)
+		if strings.ToLower(ext) == ".mp4" {
+			return fmt.Errorf("视频已经是 .mp4，无法按默认转为 .mp4。请指定 dstPath 参数")
+		}
+
+		dstPath = strings.TrimSuffix(path, ext) + ".mp4"
 	}
 
 	args := []string{
