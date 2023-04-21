@@ -292,7 +292,7 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 		}
 		// 不保留原文件，删除
 		if !reserve {
-			delFiles[path] = ""
+			delFiles[dst] = ""
 		}
 	}
 
