@@ -8,9 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
+	"github.com/donething/utils-go/dovideo"
 	"io"
 	"mime/multipart"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,13 +28,16 @@ type TGBot struct {
 	addr string
 }
 
-var (
-	client = dohttp.New(false, false)
-)
-
 const (
 	urlSendMsg        = "%s/%s/sendMessage"
 	urlSendMediaGroup = "%s/%s/sendMediaGroup"
+
+	// FileSizeThreshold TG 上传视频有2GB的限制，此处为了容错设置低一点
+	FileSizeThreshold = 1800 * 1024 * 1024
+)
+
+var (
+	client = dohttp.New(false, false)
 )
 
 // NewTGBot 创建新的 Telegram 推送机器人
@@ -66,6 +71,7 @@ func (bot *TGBot) SetAddr(addr string) {
 //
 // 注意使用 EscapeMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
 func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
+	tag := "SendMessage"
 	form := url.Values{
 		"chat_id":    []string{chatID},
 		"text":       []string{text},
@@ -73,13 +79,17 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 	}
 	bs, err := client.PostForm(fmt.Sprintf(urlSendMsg, bot.addr, bot.token), form.Encode(), nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[%s]发送消息出错：%w", tag, err)
 	}
 
 	// 返回的消息
 	var msg Message
 	err = json.Unmarshal(bs, &msg)
-	return &msg, err
+	if err != nil {
+		return nil, fmt.Errorf("[%s]解析响应出错：%w", tag, err)
+	}
+
+	return &msg, nil
 }
 
 // SendMediaGroup 发送一个媒体集
@@ -93,6 +103,7 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 // @see https://stackoverflow.com/a/75012096
 // @see https://hdcola.medium.com/telegram-bot-api-server%E4%BD%9C%E5%BC%8A%E6%9D%A1-301d40bd65ba
 func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message, error) {
+	tag := "SendMediaGroup"
 	// 正确关闭 Reader
 	defer func() {
 		for _, m := range medias {
@@ -112,7 +123,7 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 	// 添加 chat_id 字段
 	err := writer.WriteField("chat_id", chatID)
 	if err != nil {
-		return nil, fmt.Errorf("写入 chat_id 出错：%w", err)
+		return nil, fmt.Errorf("[%s]写入 chat_id 出错：%w", tag, err)
 	}
 
 	// 写入媒体
@@ -121,24 +132,24 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 		// 写入媒体
 		partMedia, err := writer.CreateFormFile(fmt.Sprintf("media%d", i), m.Name)
 		if err != nil {
-			return nil, fmt.Errorf("创建表单信息出错：%w", err)
+			return nil, fmt.Errorf("[%s]创建表单信息出错：%w", tag, err)
 		}
 
 		_, err = io.Copy(partMedia, m.Media)
 		if err != nil {
-			return nil, fmt.Errorf("复制文件流出错：%w", err)
+			return nil, fmt.Errorf("[%s]复制文件流出错：%w", tag, err)
 		}
 
 		// 写入缩略图
 		if m.Thumbnail != nil {
 			partThumbnail, err := writer.CreateFormFile(fmt.Sprintf("thumb%d", i), m.Name)
 			if err != nil {
-				return nil, fmt.Errorf("创建表单信息出错：%w", err)
+				return nil, fmt.Errorf("[%s]创建表单信息出错：%w", tag, err)
 			}
 
 			_, err = io.Copy(partThumbnail, m.Media)
 			if err != nil {
-				return nil, fmt.Errorf("复制文件流出错：%w", err)
+				return nil, fmt.Errorf("[%s]复制文件流出错：%w", tag, err)
 			}
 		}
 
@@ -157,37 +168,37 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 	// 发送媒体组的额外信息（标题、对应媒体等）
 	mediaFormBs, err := json.Marshal(mediasForm)
 	if err != nil {
-		return nil, fmt.Errorf("序列化媒体组的信息出错：%w", err)
+		return nil, fmt.Errorf("[%s]序列化媒体组的信息出错：%w", tag, err)
 	}
 
 	err = writer.WriteField("media", string(mediaFormBs))
 	if err != nil {
-		return nil, fmt.Errorf("写入 media 出错：%w", err)
+		return nil, fmt.Errorf("[%s]写入 media 出错：%w", tag, err)
 	}
 
 	err = writer.Close()
 	if err != nil {
-		return nil, fmt.Errorf("关闭 multipart writer 出错：%w", err)
+		return nil, fmt.Errorf("[%s]关闭 multipart writer 出错：%w", tag, err)
 	}
 
 	// 发送
 	sendUrl := fmt.Sprintf(urlSendMediaGroup, bot.addr, bot.token)
 	resp, err := client.Post(sendUrl, writer.FormDataContentType(), buf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[%s]执行发送媒体组的请求出错：%w", tag, err)
 	}
 	defer resp.Body.Close()
 
 	// 处理返回的消息
 	bs, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("读取响应内容出错：%w", err)
+		return nil, fmt.Errorf("[%s]读取响应内容出错：%w", tag, err)
 	}
 
 	var msg Message
 	err = json.Unmarshal(bs, &msg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[%s]解析响应内容出错：%w", tag, err)
 	}
 
 	// 速率限制
@@ -195,17 +206,17 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 		secStr := msg.Description[strings.LastIndex(msg.Description, " ")+1:]
 		sec, err := strconv.Atoi(secStr)
 		if err != nil {
-			return nil, fmt.Errorf("解析速率限制的等待时长时出错：%w", err)
+			return nil, fmt.Errorf("[%s]解析速率限制的等待时长时出错：%w", tag, err)
 		}
 
-		fmt.Printf("由于速率限制，等待 %d 秒后重新发送\n", sec)
+		fmt.Printf("[%s]由于速率限制，等待 %d 秒后重新发送\n", tag, sec)
 		time.Sleep(time.Duration(sec+1) * time.Second)
 		return bot.SendMediaGroup(chatID, medias)
 	}
 
 	// 发送失败
 	if !msg.Ok {
-		return &msg, fmt.Errorf("%d %s", msg.ErrorCode, msg.Description)
+		return &msg, fmt.Errorf("[%s]发送失败：%d %s", tag, msg.ErrorCode, msg.Description)
 	}
 
 	return &msg, nil
@@ -232,4 +243,49 @@ func EscapeMk(text string) string {
 func LegalMk(text string) string {
 	reg := regexp.MustCompile("([#])")
 	return reg.ReplaceAllString(text, "\\${1}")
+}
+
+// SendVideo 发送视频
+//
+// fileSizeThreshold 设置视频分段的的字节数，为 0 不分段
+//
+// tmpDir 设置临时文件的目录（为空""则在文件同目录）
+func (bot *TGBot) SendVideo(chatID string, title string, path string,
+	fileSizeThreshold int64, tmpDir string) error {
+	tag := "SendVideo"
+	// 发送完后，删除临时文件
+	var delFiles = make([]string, 0)
+	defer func() {
+		for _, p := range delFiles {
+			_ = os.Remove(p)
+		}
+	}()
+
+	// 获取文件大小
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("[%s]获取文件信息出错：%w", tag, err)
+	}
+	// 如果目标视频超过了设置的最大值，就切割
+	dstPaths := []string{path}
+	if fileSizeThreshold != 0 && info.Size() > fileSizeThreshold {
+		dstPaths, err = dovideo.Cut(path, fileSizeThreshold, tmpDir)
+	}
+
+	// 需要发送媒体
+	var medias = make([]*InputMedia, len(dstPaths))
+	for i, p := range dstPaths {
+		media, dst, thumb, err := GenTgMedia(p, fmt.Sprintf("%s P%02d", title, i+1))
+		if err != nil {
+			return fmt.Errorf("[%s]生成媒体信息：%w", tag, err)
+		}
+
+		medias[i] = media
+		delFiles = append(delFiles, dst, thumb)
+	}
+
+	// 发送
+	_, err = bot.SendMediaGroup(chatID, medias)
+
+	return err
 }

@@ -3,7 +3,7 @@ package dovideo
 
 import (
 	"fmt"
-	"github.com/donething/utils-go/dotg"
+	"github.com/donething/utils-go/dofile"
 	"math"
 	"os"
 	"os/exec"
@@ -17,7 +17,11 @@ import (
 // maxSegSize 单位字节
 //
 // 当 dstPath 目标路径为空""时，默认保存到视频的同目录下
+//
+// 注意：因为 ffmpeg 切割视频的时间点并不准确，切割出来的文件数量，不一定等于`文件字节数/分段大小`，
+// 所以返回的路径列表中，有的路径不存在。所以需要专门判断，去除不存在的路径
 func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
+	tag := "Cut"
 	// 默认保存到视频的同目录下
 	if strings.TrimSpace(dstDir) == "" {
 		dstDir = filepath.Dir(path)
@@ -25,12 +29,12 @@ func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
 
 	err := os.MkdirAll(dstDir, 0755)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[%s]创建临时目录出错：%w", tag, err)
 	}
 
 	file, err := os.Stat(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[%s]获取待切割视频的文件信息出错：%w", tag, err)
 	}
 
 	// 计算分段数
@@ -38,7 +42,7 @@ func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
 
 	seconds, err := GetDuration(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[%s]获取视频时长出错：%w", tag, err)
 	}
 
 	// 每个分段的时长（秒）
@@ -60,13 +64,23 @@ func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
 	cmd := exec.Command("ffmpeg", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", err, string(output))
+		return nil, fmt.Errorf("[%s]执行切割视频出错：%w: %s", tag, err, string(output))
 	}
 
 	// 用于返回路径的数组
-	dstPaths := make([]string, n)
+	dstPaths := make([]string, 0)
 	for i := 0; i < n; i++ {
-		dstPaths[i] = filepath.Join(dstDir, fmt.Sprintf("%s_%02d.mp4", name, i+1))
+		segPath := filepath.Join(dstDir, fmt.Sprintf("%s_%02d.mp4", name, i+1))
+		// 可以参考函数的使用说明，因为切片不严格按照时间，所以有的路径可能不存在
+		exists, err := dofile.Exists(segPath)
+		if err != nil {
+			return nil, fmt.Errorf("[%s]判断分段是否存在时出错：%w", tag, err)
+		}
+		if !exists {
+			break
+		}
+
+		dstPaths = append(dstPaths, segPath)
 	}
 
 	return dstPaths, nil
@@ -76,11 +90,12 @@ func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
 //
 // 如果 dstPath 目标路径为空""，将转码为".mp4"，并保存到视频同目录下
 func Convt(path string, dstPath string) error {
+	tag := "Convt"
 	// 默认转码为".mp4"，并保存到视频同目录下
 	if strings.TrimSpace(dstPath) == "" {
 		ext := filepath.Ext(path)
 		if strings.ToLower(ext) == ".mp4" {
-			return fmt.Errorf("视频已经是 .mp4，无法按默认转为 .mp4。请指定 dstPath 参数")
+			return fmt.Errorf("[%s]视频已经是 .mp4，无法按默认转为 .mp4。请指定 dstPath 参数", tag)
 		}
 
 		dstPath = strings.TrimSuffix(path, ext) + ".mp4"
@@ -95,7 +110,7 @@ func Convt(path string, dstPath string) error {
 	cmd := exec.Command("ffmpeg", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%w: %s", err, string(output))
+		return fmt.Errorf("[%s]执行转换视频出错'%s'：%w: %s", tag, path, err, string(output))
 	}
 
 	return nil
@@ -103,6 +118,7 @@ func Convt(path string, dstPath string) error {
 
 // GetDuration 获取视频的时长（秒）
 func GetDuration(path string) (int, error) {
+	tag := "GetDuration"
 	// 构建命令行参数
 	args := []string{
 		"-i", path,
@@ -116,13 +132,13 @@ func GetDuration(path string) (int, error) {
 	cmd := exec.Command("ffprobe", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return 0, fmt.Errorf("%w: %s", err, string(output))
+		return 0, fmt.Errorf("[%s]执行获取视频时长出错：%w: %s", tag, err, string(output))
 	}
 
 	str := strings.TrimSpace(string(output))
 	seconds, err := strconv.ParseFloat(str, 64)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("[%s]解析时长出错：%w", tag, err)
 	}
 
 	return int(math.Ceil(seconds)), nil
@@ -130,6 +146,7 @@ func GetDuration(path string) (int, error) {
 
 // GetResolution 获取视频的分辨率，返回：宽度、高度
 func GetResolution(path string) (width int, height int, err error) {
+	tag := "GetResolution"
 	args := []string{
 		"-i", path,
 		"-select_streams", "v:0",
@@ -142,17 +159,17 @@ func GetResolution(path string) (width int, height int, err error) {
 	cmd := exec.Command("ffprobe", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return 0, 0, fmt.Errorf("%w: %s", err, string(output))
+		return 0, 0, fmt.Errorf("[%s]执行获取视频分辨率出错：%w: %s", tag, err, string(output))
 	}
 
 	dimensions := strings.Split(strings.TrimSpace(string(output)), "x")
 	width, err = strconv.Atoi(dimensions[0])
 	if err != nil {
-		return
+		return 0, 0, fmt.Errorf("[%s]转换宽度值出错'%s'：%w", tag, dimensions[0], err)
 	}
 	height, err = strconv.Atoi(dimensions[1])
 	if err != nil {
-		return
+		return 0, 0, fmt.Errorf("[%s]转换高度值出错'%s'：%w", tag, dimensions[1], err)
 	}
 
 	return
@@ -164,6 +181,7 @@ func GetResolution(path string) (width int, height int, err error) {
 //
 // resolution 宽高比，如"640:480"
 func GetFrame(path string, dstPath string, time string, resolution string) error {
+	tag := "GetFrame"
 	args := []string{
 		"-y", "-hide_banner",
 		"-i", path,
@@ -176,63 +194,8 @@ func GetFrame(path string, dstPath string, time string, resolution string) error
 	cmd := exec.Command("ffmpeg", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%w:%s", err, string(output))
+		return fmt.Errorf("[%s]执行获取视频某时刻帧出错：%w:%s", tag, err, string(output))
 	}
 
 	return nil
-}
-
-// GenTgMedia 生成上传视频到TG的 InputMedia 实例
-func GenTgMedia(path string, title string) (media *dotg.InputMedia, dstPath string, thumbnail string, err error) {
-	dstPath = path
-	// 不是 mp4 格式的视频，才要转码为 mp4
-	if strings.ToLower(filepath.Ext(path)) != ".mp4" {
-		dstPath = strings.TrimSuffix(path, filepath.Ext(path)) + ".mp4"
-		err = Convt(path, dstPath)
-		if err != nil {
-			return
-		}
-
-		// 删除原视频。本来可以放在末尾的，但是占用磁盘空间，所以在转码成功后删除
-		err = os.Remove(path)
-		if err != nil {
-			return
-		}
-	}
-
-	// 获取视频封面
-	thumbnail = strings.TrimSuffix(dstPath, filepath.Ext(dstPath)) + ".jpg"
-	err = GetFrame(dstPath, thumbnail, "00:00:03", "320:320")
-	if err != nil {
-		return
-	}
-
-	// 准备媒体数据
-	vbs, err := os.Open(dstPath)
-	if err != nil {
-		return
-	}
-
-	cbs, err := os.Open(thumbnail)
-	if err != nil {
-		return
-	}
-
-	w, h, err := GetResolution(dstPath)
-	if err != nil {
-		return
-	}
-	media = &dotg.InputMedia{
-		MediaData: &dotg.MediaData{
-			Type:              dotg.TypeVideo,
-			Caption:           title,
-			Width:             w,
-			Height:            h,
-			SupportsStreaming: true,
-		},
-		Media:     vbs,
-		Thumbnail: cbs,
-	}
-
-	return
 }
