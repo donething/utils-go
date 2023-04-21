@@ -254,9 +254,9 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 	fileSizeThreshold int64, tmpDir string) error {
 	tag := "SendVideo"
 	// 发送完后，删除临时文件
-	var delFiles = make([]string, 0)
+	var delFiles = make(map[string]string)
 	defer func() {
-		for _, p := range delFiles {
+		for p := range delFiles {
 			_ = os.Remove(p)
 		}
 	}()
@@ -281,7 +281,11 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 		}
 
 		medias[i] = media
-		delFiles = append(delFiles, dst, thumb)
+		delFiles[thumb] = ""
+		if len(dstPaths) >= 2 {
+			delFiles[dst] = ""
+			delFiles[p] = ""
+		}
 	}
 
 	// 发送
