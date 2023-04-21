@@ -93,6 +93,18 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 // @see https://stackoverflow.com/a/75012096
 // @see https://hdcola.medium.com/telegram-bot-api-server%E4%BD%9C%E5%BC%8A%E6%9D%A1-301d40bd65ba
 func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message, error) {
+	// 关闭流
+	defer func() {
+		for _, m := range medias {
+			if r, ok := m.Media.(io.ReadCloser); ok {
+				r.Close()
+			}
+			if r, ok := m.Thumbnail.(io.ReadCloser); ok {
+				r.Close()
+			}
+		}
+	}()
+
 	// 组装 multipart 文件上传请求参数
 	buf := &bytes.Buffer{}
 	writer := multipart.NewWriter(buf)
@@ -106,10 +118,6 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 	// 写入媒体
 	var mediasForm = make([]MediaForm, len(medias))
 	for i, m := range medias {
-		if r, ok := m.Media.(io.ReadCloser); ok {
-			defer r.Close()
-		}
-
 		// 写入媒体
 		partMedia, err := writer.CreateFormFile(fmt.Sprintf("media%d", i), m.Name)
 		if err != nil {

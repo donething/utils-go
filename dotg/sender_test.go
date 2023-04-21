@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/donething/utils-go/dofile"
 	"github.com/donething/utils-go/dohttp"
+	"github.com/donething/utils-go/dovideo"
 	"os"
 	"testing"
 )
@@ -60,12 +61,18 @@ func TestSendMediaGroup(t *testing.T) {
 }
 
 func TestSendVideo(t *testing.T) {
-	bs, err := os.ReadFile("D:/Tmp/VpsGo/output1.mp4")
+	path := "D:/Tmp/VpsGo/output1.mp4"
+	bs, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	cbs, err := os.ReadFile("D:/Tmp/VpsGo/output.jpg")
+	cbs, err := os.ReadFile("D:/Tmp/VpsGo/output1.jpg")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w, h, err := dovideo.GetResolution(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,6 +83,8 @@ func TestSendVideo(t *testing.T) {
 			Caption:   "测试流媒体，可播放",
 			ParseMode: "",
 
+			Width:             w,
+			Height:            h,
 			SupportsStreaming: true,
 		},
 		Media:     bytes.NewReader(bs),
