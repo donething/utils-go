@@ -4,7 +4,6 @@
 package dotg
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
@@ -117,77 +116,109 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 	}()
 
 	// 组装 multipart 文件上传请求参数
-	buf := &bytes.Buffer{}
-	writer := multipart.NewWriter(buf)
+	pr, pw := io.Pipe()
+	writer := multipart.NewWriter(pw)
 
-	// 添加 chat_id 字段
-	err := writer.WriteField("chat_id", chatID)
-	if err != nil {
-		return nil, fmt.Errorf("[%s]写入 chat_id 出错：%w", tag, err)
-	}
+	var chErr = make(chan error)
 
-	// 写入媒体
-	var mediasForm = make([]MediaForm, len(medias))
-	for i, m := range medias {
+	go func() {
+		// 添加 chat_id 字段
+		err := writer.WriteField("chat_id", chatID)
+		if err != nil {
+			chErr <- fmt.Errorf("[%s]写入 chat_id 出错：%w", tag, err)
+			return
+		}
+
 		// 写入媒体
-		partMedia, err := writer.CreateFormFile(fmt.Sprintf("media%d", i), m.Name)
-		if err != nil {
-			return nil, fmt.Errorf("[%s]创建表单信息出错：%w", tag, err)
-		}
-
-		_, err = io.Copy(partMedia, m.Media)
-		if err != nil {
-			return nil, fmt.Errorf("[%s]复制文件流出错：%w", tag, err)
-		}
-
-		// 写入缩略图
-		if m.Thumbnail != nil {
-			partThumbnail, err := writer.CreateFormFile(fmt.Sprintf("thumb%d", i), m.Name)
+		var mediasForm = make([]MediaForm, len(medias))
+		for i, m := range medias {
+			// 写入媒体
+			partMedia, err := writer.CreateFormFile(fmt.Sprintf("media%d", i), m.Name)
 			if err != nil {
-				return nil, fmt.Errorf("[%s]创建表单信息出错：%w", tag, err)
+				chErr <- fmt.Errorf("[%s]创建表单信息出错：%w", tag, err)
+				return
 			}
 
-			_, err = io.Copy(partThumbnail, m.Media)
+			_, err = io.Copy(partMedia, m.Media)
 			if err != nil {
-				return nil, fmt.Errorf("[%s]复制文件流出错：%w", tag, err)
+				chErr <- fmt.Errorf("[%s]复制文件流出错：%w", tag, err)
+				return
 			}
+
+			// 写入缩略图
+			if m.Thumbnail != nil {
+				partThumbnail, err := writer.CreateFormFile(fmt.Sprintf("thumb%d", i), m.Name)
+				if err != nil {
+					chErr <- fmt.Errorf("[%s]创建表单信息出错：%w", tag, err)
+					return
+				}
+
+				_, err = io.Copy(partThumbnail, m.Thumbnail)
+				if err != nil {
+					chErr <- fmt.Errorf("[%s]复制文件流出错：%w", tag, err)
+					return
+				}
+			}
+
+			// 设置默认的标题解析模式 MarkdownV2
+			if m.MediaData.ParseMode == "" {
+				m.MediaData.ParseMode = "MarkdownV2"
+			}
+			mediaForm := MediaForm{
+				MediaData: m.MediaData,
+				Media:     fmt.Sprintf("attach://media%d", i),
+				Thumbnail: fmt.Sprintf("attach://thumb%d", i),
+			}
+			mediasForm[i] = mediaForm
 		}
 
-		// 设置默认的标题解析模式 MarkdownV2
-		if m.MediaData.ParseMode == "" {
-			m.MediaData.ParseMode = "MarkdownV2"
+		// 发送媒体组的额外信息（标题、对应媒体等）
+		mediaFormBs, err := json.Marshal(mediasForm)
+		if err != nil {
+			chErr <- fmt.Errorf("[%s]序列化媒体组的信息出错：%w", tag, err)
+			return
 		}
-		mediaForm := MediaForm{
-			MediaData: m.MediaData,
-			Media:     fmt.Sprintf("attach://media%d", i),
-			Thumbnail: fmt.Sprintf("attach://thumb%d", i),
+
+		err = writer.WriteField("media", string(mediaFormBs))
+		if err != nil {
+			chErr <- fmt.Errorf("[%s]写入 media 出错：%w", tag, err)
+			return
 		}
-		mediasForm[i] = mediaForm
-	}
 
-	// 发送媒体组的额外信息（标题、对应媒体等）
-	mediaFormBs, err := json.Marshal(mediasForm)
-	if err != nil {
-		return nil, fmt.Errorf("[%s]序列化媒体组的信息出错：%w", tag, err)
-	}
+		err = writer.Close()
+		if err != nil {
+			chErr <- fmt.Errorf("[%s]关闭 multipart writer 出错：%w", tag, err)
+			return
+		}
 
-	err = writer.WriteField("media", string(mediaFormBs))
-	if err != nil {
-		return nil, fmt.Errorf("[%s]写入 media 出错：%w", tag, err)
-	}
+		// 注意要关闭 pipe writer 否则会卡主
+		err = pw.Close()
+		if err != nil {
+			chErr <- fmt.Errorf("[%s]关闭 pipe writer 出错：%w", tag, err)
+			return
+		}
 
-	err = writer.Close()
-	if err != nil {
-		return nil, fmt.Errorf("[%s]关闭 multipart writer 出错：%w", tag, err)
-	}
+		chErr <- nil
+	}()
 
 	// 发送
 	sendUrl := fmt.Sprintf(urlSendMediaGroup, bot.addr, bot.token)
-	resp, err := client.Post(sendUrl, writer.FormDataContentType(), buf)
+	resp, err := client.Post(sendUrl, writer.FormDataContentType(), pr)
+
 	if err != nil {
 		return nil, fmt.Errorf("[%s]执行发送媒体组的请求出错：%w", tag, err)
 	}
 	defer resp.Body.Close()
+
+	err = pr.Close()
+	if err != nil {
+		return nil, fmt.Errorf("关闭 pipe reader 出错：%w", err)
+	}
+
+	// 读取错误信息
+	if err = <-chErr; err != nil {
+		return nil, fmt.Errorf("创建 multipart form 出错：%w", err)
+	}
 
 	// 处理返回的消息
 	bs, err := io.ReadAll(resp.Body)
