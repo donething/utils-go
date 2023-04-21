@@ -93,7 +93,7 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 // @see https://stackoverflow.com/a/75012096
 // @see https://hdcola.medium.com/telegram-bot-api-server%E4%BD%9C%E5%BC%8A%E6%9D%A1-301d40bd65ba
 func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message, error) {
-	// 关闭流
+	// 正确关闭 Reader
 	defer func() {
 		for _, m := range medias {
 			if r, ok := m.Media.(io.ReadCloser); ok {
