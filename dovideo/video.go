@@ -3,6 +3,7 @@ package dovideo
 
 import (
 	"fmt"
+	"github.com/donething/utils-go/dotg"
 	"math"
 	"os"
 	"os/exec"
@@ -164,7 +165,7 @@ func GetResolution(path string) (width int, height int, err error) {
 // resolution 宽高比，如"640:480"
 func GetFrame(path string, dstPath string, time string, resolution string) error {
 	args := []string{
-		"-hide_banner",
+		"-y", "-hide_banner",
 		"-i", path,
 		"-ss", time,
 		"-vframes", "1",
@@ -179,4 +180,59 @@ func GetFrame(path string, dstPath string, time string, resolution string) error
 	}
 
 	return nil
+}
+
+// GenTgMedia 生成上传视频到TG的 InputMedia 实例
+func GenTgMedia(path string, title string) (media *dotg.InputMedia, dstPath string, thumbnail string, err error) {
+	dstPath = path
+	// 不是 mp4 格式的视频，才要转码为 mp4
+	if strings.ToLower(filepath.Ext(path)) != ".mp4" {
+		dstPath = strings.TrimSuffix(path, filepath.Ext(path)) + ".mp4"
+		err = Convt(path, dstPath)
+		if err != nil {
+			return
+		}
+
+		// 删除原视频。本来可以放在末尾的，但是占用磁盘空间，所以在转码成功后删除
+		err = os.Remove(path)
+		if err != nil {
+			return
+		}
+	}
+
+	// 获取视频封面
+	thumbnail = strings.TrimSuffix(dstPath, filepath.Ext(dstPath)) + ".jpg"
+	err = GetFrame(dstPath, thumbnail, "00:00:03", "320:320")
+	if err != nil {
+		return
+	}
+
+	// 准备媒体数据
+	vbs, err := os.Open(dstPath)
+	if err != nil {
+		return
+	}
+
+	cbs, err := os.Open(thumbnail)
+	if err != nil {
+		return
+	}
+
+	w, h, err := GetResolution(dstPath)
+	if err != nil {
+		return
+	}
+	media = &dotg.InputMedia{
+		MediaData: &dotg.MediaData{
+			Type:              dotg.TypeVideo,
+			Caption:           title,
+			Width:             w,
+			Height:            h,
+			SupportsStreaming: true,
+		},
+		Media:     vbs,
+		Thumbnail: cbs,
+	}
+
+	return
 }

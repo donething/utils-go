@@ -1,6 +1,8 @@
 package dovideo
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGetVideoResolution(t *testing.T) {
 	w, h, err := GetResolution("D:/Tmp/VpsGo/video.mp4")
@@ -41,4 +43,13 @@ func TestConvt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestGenTgMedia(t *testing.T) {
+	media, dst, thumb, err := GenTgMedia("D:/Tmp/VpsGo/video.mp4", "测试视频标题")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%+v, %s, %s\n", *media, dst, thumb)
 }
