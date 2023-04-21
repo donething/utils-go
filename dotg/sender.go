@@ -4,9 +4,12 @@
 package dotg
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
+	"io"
+	"mime/multipart"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -90,39 +93,85 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 // @see https://stackoverflow.com/a/75012096
 // @see https://hdcola.medium.com/telegram-bot-api-server%E4%BD%9C%E5%BC%8A%E6%9D%A1-301d40bd65ba
 func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message, error) {
-	// 其它属性
-	form := make(map[string]string)
-	form["chat_id"] = chatID
+	// 组装 multipart 文件上传请求参数
+	buf := &bytes.Buffer{}
+	writer := multipart.NewWriter(buf)
 
-	// 当 medias 二进制数据，需要作为文件发送
-	filesList := make(map[string]interface{})
+	// 添加 chat_id 字段
+	err := writer.WriteField("chat_id", chatID)
+	if err != nil {
+		return nil, fmt.Errorf("写入 chat_id 出错：%w", err)
+	}
+
+	// 写入媒体
+	var mediasForm = make([]MediaForm, len(medias))
 	for i, m := range medias {
-		// 设置 Caption 的解析模式，默认"MarkdownV2"
-		if m.ParseMode == "" {
-			m.ParseMode = "MarkdownV2"
+		if r, ok := m.Media.(io.ReadCloser); ok {
+			defer r.Close()
 		}
 
-		// 此时需要在表单中加入该数据的指向标志
-		if bs, ok := m.Media.([]byte); ok {
-			m.Media = fmt.Sprintf("attach://%d", i)
-			filesList[fmt.Sprintf("%d", i)] = bs
+		// 写入媒体
+		partMedia, err := writer.CreateFormFile(fmt.Sprintf("media%d", i), m.Name)
+		if err != nil {
+			return nil, fmt.Errorf("创建表单信息出错：%w", err)
 		}
+
+		_, err = io.Copy(partMedia, m.Media)
+		if err != nil {
+			return nil, fmt.Errorf("复制文件流出错：%w", err)
+		}
+
+		// 写入缩略图
+		if m.Thumbnail != nil {
+			partThumbnail, err := writer.CreateFormFile(fmt.Sprintf("thumb%d", i), m.Name)
+			if err != nil {
+				return nil, fmt.Errorf("创建表单信息出错：%w", err)
+			}
+
+			_, err = io.Copy(partThumbnail, m.Media)
+			if err != nil {
+				return nil, fmt.Errorf("复制文件流出错：%w", err)
+			}
+		}
+
+		mediaForm := MediaForm{
+			MediaData: m.MediaData,
+			Media:     fmt.Sprintf("attach://media%d", i),
+			Thumbnail: fmt.Sprintf("attach://thumb%d", i),
+		}
+		mediasForm[i] = mediaForm
 	}
 
-	// 将 medias 序列化后作为表单"media"的值发送
-	mediaStr, err := json.Marshal(medias)
+	// 发送媒体组的额外信息（标题、对应媒体等）
+	mediaFormBs, err := json.Marshal(mediasForm)
+	if err != nil {
+		return nil, fmt.Errorf("序列化媒体组的信息出错：%w", err)
+	}
+
+	err = writer.WriteField("media", string(mediaFormBs))
+	if err != nil {
+		return nil, fmt.Errorf("写入 media 出错：%w", err)
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return nil, fmt.Errorf("关闭 multipart writer 出错：%w", err)
+	}
+
+	// 发送
+	sendUrl := fmt.Sprintf(urlSendMediaGroup, bot.addr, bot.token)
+	resp, err := client.Post(sendUrl, writer.FormDataContentType(), buf)
 	if err != nil {
 		return nil, err
 	}
-	form["media"] = string(mediaStr)
+	defer resp.Body.Close()
 
-	bs, err := client.PostFiles(fmt.Sprintf(urlSendMediaGroup, bot.addr, bot.token),
-		filesList, form, nil)
+	// 处理返回的消息
+	bs, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("读取响应内容出错：%w", err)
 	}
 
-	// 返回的消息
 	var msg Message
 	err = json.Unmarshal(bs, &msg)
 	if err != nil {

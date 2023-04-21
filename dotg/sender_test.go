@@ -1,6 +1,7 @@
 package dotg
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/donething/utils-go/dofile"
 	"github.com/donething/utils-go/dohttp"
@@ -30,28 +31,6 @@ func TestTGBot_SendMessage(t *testing.T) {
 }
 
 func TestSendMediaGroup(t *testing.T) {
-	// 发送远程文件
-	/*
-		msg, err := tg.SendMediaGroup(chatID, []InputMedia{
-			{
-				Type:    Photo,
-				InputMedia:   "https://cdn.v2ex.com/avatar/b600/b4a3/49950_large.png?m=1456725848",
-				Caption: "头像1",
-			},
-			{
-				Type:    Photo,
-				InputMedia:   "https://cdn.v2ex.com/gravatar/4598134cecabd98904511e065adca226?s=48",
-				Caption: "头像2",
-			},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Logf("发送本地文件的结果：%+v\n", *msg)
-	*/
-
-	// 发送本地文件
-
 	f1, err := dofile.Read("D:/Tmp/VpsGo/uploads/abc.jpg")
 	if err != nil {
 		t.Fatal(err)
@@ -59,13 +38,17 @@ func TestSendMediaGroup(t *testing.T) {
 
 	medias := []*InputMedia{
 		{
-			Type:    TypePhoto,
-			Media:   f1,
-			Caption: "图片：[搜索](https://www.google.com/)",
+			MediaData: &MediaData{
+				Type:    TypePhoto,
+				Caption: "图片：[测试](https://www.google.com/)",
+			},
+			Media: bytes.NewReader(f1),
 		},
 		{
-			Type:  TypePhoto,
-			Media: f1,
+			MediaData: &MediaData{
+				Type: TypePhoto,
+			},
+			Media: bytes.NewReader(f1),
 		},
 	}
 
@@ -77,17 +60,26 @@ func TestSendMediaGroup(t *testing.T) {
 }
 
 func TestSendVideo(t *testing.T) {
-	bs, err := os.ReadFile("D:/Tmp/live/bili_8739477_1681227533414_01.mp4")
+	bs, err := os.ReadFile("D:/Tmp/VpsGo/output1.mp4")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cbs, err := os.ReadFile("D:/Tmp/VpsGo/output.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	m := &InputMedia{
-		Type:              TypeVideo,
-		Media:             bs,
-		Caption:           "测试流媒体，可播放",
-		ParseMode:         "",
-		SupportsStreaming: true,
+		MediaData: &MediaData{
+			Type:      TypeVideo,
+			Caption:   "测试流媒体，可播放",
+			ParseMode: "",
+
+			SupportsStreaming: true,
+		},
+		Media:     bytes.NewReader(bs),
+		Thumbnail: bytes.NewReader(cbs),
 	}
 
 	msg, err := tg.SendMediaGroup(chatID, []*InputMedia{m})
