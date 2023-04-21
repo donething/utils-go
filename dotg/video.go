@@ -31,7 +31,7 @@ func GenTgMedia(path string, title string) (media *InputMedia, dstPath string, t
 
 	// 获取视频封面
 	thumbnail = strings.TrimSuffix(dstPath, filepath.Ext(dstPath)) + ".jpg"
-	err = dovideo.GetFrame(dstPath, thumbnail, "00:00:00", "320:320")
+	err = dovideo.GetFrame(dstPath, thumbnail, "00:00:03", "320:320")
 	if err != nil {
 		return nil, "", "", fmt.Errorf("[%s]获取封面出错：%w", tag, err)
 	}

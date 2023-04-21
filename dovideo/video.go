@@ -3,7 +3,6 @@ package dovideo
 
 import (
 	"fmt"
-	"github.com/donething/utils-go/dofile"
 	"math"
 	"os"
 	"os/exec"
@@ -71,12 +70,12 @@ func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
 	dstPaths := make([]string, 0)
 	for i := 0; i < n; i++ {
 		segPath := filepath.Join(dstDir, fmt.Sprintf("%s_%02d.mp4", name, i+1))
-		// 可以参考函数的使用说明，因为切片不严格按照时间，所以有的路径可能不存在
-		exists, err := dofile.Exists(segPath)
-		if err != nil {
-			return nil, fmt.Errorf("[%s]判断分段是否存在时出错：%w", tag, err)
-		}
-		if !exists {
+		// 可以参考函数的使用说明，因为切片不严格按照时间，所以后面的路径可能不存在
+		// 也因为这个原因，最后一个分段可能极小（80KB），几乎不含数据，应该忽略，也避免提取缩略图时失败
+		if fi, err := os.Stat(segPath); os.IsNotExist(err) || fi.Size() < 512*1024 {
+			fmt.Printf("忽略极小的视频分段(%d): %s\n", i+1, segPath)
+			// 移除可能极小分段
+			_ = os.Remove(segPath)
 			break
 		}
 
