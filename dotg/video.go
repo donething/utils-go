@@ -53,7 +53,7 @@ func GenTgMedia(path string, title string) (media *InputMedia, dstPath string, t
 
 	media = &InputMedia{
 		Type:              TypeVideo,
-		Media:             dstPath,
+		Media:             fmt.Sprintf("file://%s", dstPath),
 		Thumbnail:         cbs,
 		Caption:           title,
 		Width:             w,
