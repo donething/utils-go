@@ -223,46 +223,46 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 	}
 
 	// 写入媒体
-	var mediasForm = make([]MediaForm, len(medias))
 	for i, m := range medias {
-		// 写入媒体
-		partMedia, err := writer.CreateFormFile(fmt.Sprintf("media%d", i), m.Name)
-		if err != nil {
-			return nil, fmt.Errorf("[%s]创建表单信息出错：%w", tag, err)
-		}
+		// 如果媒体数据的来源是 Reader，则读取
+		if reader, ok := m.Media.(io.Reader); ok {
+			// 写入媒体
+			partMedia, err := writer.CreateFormFile(fmt.Sprintf("media%d", i), m.Name)
+			if err != nil {
+				return nil, fmt.Errorf("[%s]创建视频表单信息出错：%w", tag, err)
+			}
 
-		_, err = io.Copy(partMedia, m.Media)
-		if err != nil {
-			return nil, fmt.Errorf("[%s]复制文件流出错：%w", tag, err)
+			_, err = io.Copy(partMedia, reader)
+			if err != nil {
+				return nil, fmt.Errorf("[%s]复制视频文件流出错：%w", tag, err)
+			}
+
+			m.Media = fmt.Sprintf("attach://media%d", i)
 		}
 
 		// 写入缩略图
-		if m.Thumbnail != nil {
+		if reader, ok := m.Thumbnail.(io.Reader); ok {
 			partThumbnail, err := writer.CreateFormFile(fmt.Sprintf("thumb%d", i), m.Name)
 			if err != nil {
-				return nil, fmt.Errorf("[%s]创建表单信息出错：%w", tag, err)
+				return nil, fmt.Errorf("[%s]创建封面表单信息出错：%w", tag, err)
 			}
 
-			_, err = io.Copy(partThumbnail, m.Thumbnail)
+			_, err = io.Copy(partThumbnail, reader)
 			if err != nil {
-				return nil, fmt.Errorf("[%s]复制文件流出错：%w", tag, err)
+				return nil, fmt.Errorf("[%s]复制封面文件流出错：%w", tag, err)
 			}
+
+			m.Thumbnail = fmt.Sprintf("attach://thumb%d", i)
 		}
 
 		// 设置默认的标题解析模式 MarkdownV2
-		if m.MediaData.ParseMode == "" {
-			m.MediaData.ParseMode = "MarkdownV2"
+		if m.ParseMode == "" {
+			m.ParseMode = "MarkdownV2"
 		}
-		mediaForm := MediaForm{
-			MediaData: m.MediaData,
-			Media:     fmt.Sprintf("attach://media%d", i),
-			Thumbnail: fmt.Sprintf("attach://thumb%d", i),
-		}
-		mediasForm[i] = mediaForm
 	}
 
 	// 发送媒体组的额外信息（标题、对应媒体等）
-	mediaFormBs, err := json.Marshal(mediasForm)
+	mediaFormBs, err := json.Marshal(medias)
 	if err != nil {
 		return nil, fmt.Errorf("[%s]序列化媒体组的信息出错：%w", tag, err)
 	}
@@ -354,6 +354,7 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 	var medias = make([]*InputMedia, len(dstPaths))
 	for i, p := range dstPaths {
 		// 创建媒体信息
+		// 仅第一个媒体携带标题信息，作为整个媒体集的标题
 		media, dst, thumb, err := GenTgMedia(p, "")
 		if err != nil {
 			return nil, fmt.Errorf("[%s]生成媒体信息：%w", tag, err)
@@ -361,6 +362,7 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 		if i == 0 {
 			media.Caption = title
 		}
+
 		// 多分段时，加上 Pn 标识
 		if len(dstPaths) >= 2 {
 			media.Name = fmt.Sprintf("P%02d", i+1)

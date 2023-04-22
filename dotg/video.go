@@ -10,10 +10,12 @@ import (
 
 // GenTgMedia 生成上传视频到TG的 InputMedia 实例
 //
-// 过程：会转码、生成封面
+// 会转码、生成封面，不会切割长视频
 //
 // 注意：转码成功时会删除原视频
-func GenTgMedia(path string, title string) (media *InputMedia, dstPath string, thumbnail string, err error) {
+//
+// 会返回新视频、封面的路径，以便上传后删除
+func GenTgMedia(path string, title string) (media *InputMedia, dstPath string, thumbPath string, err error) {
 	tag := "GenTgMedia"
 	dstPath = path
 	// 不是 mp4 格式的视频，才要转码为 mp4
@@ -32,19 +34,14 @@ func GenTgMedia(path string, title string) (media *InputMedia, dstPath string, t
 	}
 
 	// 获取视频封面
-	thumbnail = strings.TrimSuffix(dstPath, filepath.Ext(dstPath)) + ".jpg"
-	err = dovideo.GetFrame(dstPath, thumbnail, "00:00:03", "320:320")
+	thumbPath = strings.TrimSuffix(dstPath, filepath.Ext(dstPath)) + ".jpg"
+	err = dovideo.GetFrame(dstPath, thumbPath, "00:00:03", "")
 	if err != nil {
 		return nil, "", "", fmt.Errorf("[%s]获取封面出错：%w", tag, err)
 	}
 
 	// 准备媒体数据
-	vbs, err := os.Open(dstPath)
-	if err != nil {
-		return nil, "", "", fmt.Errorf("[%s]打开目标视频出错：%w", tag, err)
-	}
-
-	cbs, err := os.Open(thumbnail)
+	cbs, err := os.Open(thumbPath)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("[%s]打开缩略图出错：%w", tag, err)
 	}
@@ -53,16 +50,15 @@ func GenTgMedia(path string, title string) (media *InputMedia, dstPath string, t
 	if err != nil {
 		return nil, "", "", fmt.Errorf("[%s]获取视频分辨率出错：%w", tag, err)
 	}
+
 	media = &InputMedia{
-		MediaData: &MediaData{
-			Type:              TypeVideo,
-			Caption:           title,
-			Width:             w,
-			Height:            h,
-			SupportsStreaming: true,
-		},
-		Media:     vbs,
-		Thumbnail: cbs,
+		Type:              TypeVideo,
+		Media:             dstPath,
+		Thumbnail:         cbs,
+		Caption:           title,
+		Width:             w,
+		Height:            h,
+		SupportsStreaming: true,
 	}
 
 	return

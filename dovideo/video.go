@@ -178,7 +178,7 @@ func GetResolution(path string) (width int, height int, err error) {
 //
 // time 时间戳，如"01:20:10"
 //
-// resolution 宽高比，如"640:480"
+// resolution 缩放的宽高比，如"640:480"。为空""则缩放
 func GetFrame(path string, dstPath string, time string, resolution string) error {
 	tag := "GetFrame"
 	args := []string{
@@ -186,9 +186,13 @@ func GetFrame(path string, dstPath string, time string, resolution string) error
 		"-i", path,
 		"-ss", time,
 		"-vframes", "1",
-		"-vf", fmt.Sprintf("scale=%s:force_original_aspect_ratio=decrease", resolution),
-		dstPath,
 	}
+	if resolution != "" {
+		r := fmt.Sprintf("scale=%s:force_original_aspect_ratio=decrease", resolution)
+		args = append(args, []string{"-vf", r}...)
+	}
+
+	args = append(args, dstPath)
 
 	cmd := exec.Command("ffmpeg", args...)
 	output, err := cmd.CombinedOutput()

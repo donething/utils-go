@@ -7,7 +7,9 @@ import (
 	"github.com/donething/utils-go/dohttp"
 	"github.com/donething/utils-go/dovideo"
 	"os"
+	"strings"
 	"testing"
+	"time"
 )
 
 var (
@@ -16,9 +18,13 @@ var (
 )
 
 func init() {
-	err := tg.SetProxy(dohttp.ProxySocks5)
-	if err != nil {
-		fmt.Printf("设置代理出错：%s\n", err)
+	// tg.SetAddr("http://xxx:yyy")
+
+	if strings.Contains(tg.addr, "telegram") {
+		err := tg.SetProxy(dohttp.ProxySocks5)
+		if err != nil {
+			fmt.Printf("设置代理出错：%s\n", err)
+		}
 	}
 }
 
@@ -33,26 +39,24 @@ func TestTGBot_SendMessage(t *testing.T) {
 	}
 }
 
-func TestSendMediaGroup(t *testing.T) {
-	f1, err := dofile.Read("C:/Users/Do/Downloads/ipz275pl.jpg")
+func TestSendMediaGroupPic(t *testing.T) {
+	path := "C:/Users/Do/Downloads/ipz275pl.jpg"
+	f1, err := dofile.Read(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	medias := []*InputMedia{
 		{
-			MediaData: &MediaData{
-				Type:    TypePhoto,
-				Caption: "图片：[测试](https://www.google.com/)",
-				Name:    "p1",
-			},
-			Media: bytes.NewReader(f1),
+			Type:    TypePhoto,
+			Caption: "图片：[测试](https://www.google.com/)",
+			Name:    "p1 Reader",
+			Media:   bytes.NewReader(f1),
 		},
 		{
-			MediaData: &MediaData{
-				Type: TypePhoto,
-				Name: "p2",
-			},
+			Type: TypePhoto,
+			Name: "p2 路径",
+			// Media: fmt.Sprintf("file:///%s", path),
 			Media: bytes.NewReader(f1),
 		},
 	}
@@ -64,14 +68,14 @@ func TestSendMediaGroup(t *testing.T) {
 	t.Logf("发送本地文件的结果：%+v\n", *msg)
 }
 
-func TestSendVideo(t *testing.T) {
-	path := "D:/Tmp/VpsGo/output1.mp4"
+func TestTGBot_SendMediaGroupVideo(t *testing.T) {
+	path := "D:/Tmp/VpsGo/Tmp/out 空格.mp4"
 	bs, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	cbs, err := os.ReadFile("D:/Tmp/VpsGo/output1.jpg")
+	cbs, err := os.ReadFile("D:/Tmp/VpsGo/Tmp/output.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,17 +86,15 @@ func TestSendVideo(t *testing.T) {
 	}
 
 	m := &InputMedia{
-		MediaData: &MediaData{
-			Type:      TypeVideo,
-			Caption:   "测试流媒体，可播放",
-			ParseMode: "",
-
-			Width:             w,
-			Height:            h,
-			SupportsStreaming: true,
-		},
+		Type:      TypeVideo,
 		Media:     bytes.NewReader(bs),
 		Thumbnail: bytes.NewReader(cbs),
+		Caption:   "测试流媒体，可播放",
+		ParseMode: "",
+
+		Width:             w,
+		Height:            h,
+		SupportsStreaming: true,
 	}
 
 	msg, err := tg.SendMediaGroup(chatID, []*InputMedia{m})
@@ -127,11 +129,12 @@ func TestReplaceMk(t *testing.T) {
 }
 
 func TestTGBot_SendVideo(t *testing.T) {
-	msg, err := tg.SendVideo(os.Getenv("MY_TG_CHAT_LIVE"), "测试标题", "D:/Tmp/VpsGo/Tmp/out.mp4",
+	msg, err := tg.SendVideo(os.Getenv("MY_TG_CHAT_LIVE"), "测试标题", "D:/Tmp/VpsGo/Tmp/out 空格.mp4",
 		5*1024*1024, "", true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Logf("%+v\n", msg)
+	time.Sleep(100 * time.Second)
 }
