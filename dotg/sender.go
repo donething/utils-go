@@ -321,7 +321,7 @@ func LegalMk(text string) string {
 	return reg.ReplaceAllString(text, "\\${1}")
 }
 
-// SendVideo 发送视频
+// SendVideo 发送视频。只支持在 TG Local Server 模式下发送视频
 //
 // fileSizeThreshold 设置视频分段的的字节数，为 0 不分段
 //
