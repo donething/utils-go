@@ -8,3 +8,9 @@ type Message struct {
 	ErrorCode   int    `json:"error_code,omitempty"`
 	Description string `json:"description，omitempty"`
 }
+
+// SendResult go Send() 的传回的结果
+type SendResult struct {
+	Message *Message
+	Error   error
+}

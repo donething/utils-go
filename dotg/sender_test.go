@@ -24,15 +24,17 @@ func init() {
 
 func TestTGBot_SendMessage(t *testing.T) {
 	txt := EscapeMk("测#试Markdown文本*消息*：") + "[搜索](https://www.google.com/)"
-	msg, err := tg.SendMessage(chatID, txt)
-	if err != nil {
-		t.Fatal(err)
+	for {
+		msg, err := tg.SendMessage(chatID, txt)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("%+v\n", *msg)
 	}
-	t.Logf("%+v\n", *msg)
 }
 
 func TestSendMediaGroup(t *testing.T) {
-	f1, err := dofile.Read("D:/Tmp/VpsGo/uploads/abc.jpg")
+	f1, err := dofile.Read("C:/Users/Do/Downloads/ipz275pl.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,12 +44,14 @@ func TestSendMediaGroup(t *testing.T) {
 			MediaData: &MediaData{
 				Type:    TypePhoto,
 				Caption: "图片：[测试](https://www.google.com/)",
+				Name:    "p1",
 			},
 			Media: bytes.NewReader(f1),
 		},
 		{
 			MediaData: &MediaData{
 				Type: TypePhoto,
+				Name: "p2",
 			},
 			Media: bytes.NewReader(f1),
 		},

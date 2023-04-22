@@ -10,6 +10,8 @@ import (
 
 // GenTgMedia 生成上传视频到TG的 InputMedia 实例
 //
+// 过程：会转码、生成封面
+//
 // 注意：转码成功时会删除原视频
 func GenTgMedia(path string, title string) (media *InputMedia, dstPath string, thumbnail string, err error) {
 	tag := "GenTgMedia"
