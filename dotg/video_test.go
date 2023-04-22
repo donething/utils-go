@@ -5,7 +5,7 @@ import (
 )
 
 func TestGenTgMedia(t *testing.T) {
-	media, dst, thumb, err := GenTgMedia("D:/Tmp/VpsGo/video.mp4", "测试视频标题")
+	media, dst, thumb, err := GenVideoMedia("D:/Tmp/VpsGo/video.mp4", "测试视频标题")
 	if err != nil {
 		t.Fatal(err)
 	}

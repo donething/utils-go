@@ -323,6 +323,9 @@ func LegalMk(text string) string {
 
 // SendVideo 发送视频。只支持在 TG Local Server 模式下发送视频
 //
+// 仅适合 TG Local Server 模式，因为媒体数据是通过"file://"协议传的，而不是建立pipe管道读写数据，
+// 这样避免 write: connection reset by peer，也更稳定
+//
 // fileSizeThreshold 设置视频分段的的字节数，为 0 不分段
 //
 // tmpDir 设置临时文件的目录（为空""则在文件同目录）
@@ -355,7 +358,7 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 	for i, p := range dstPaths {
 		// 创建媒体信息
 		// 仅第一个媒体携带标题信息，作为整个媒体集的标题
-		media, dst, thumb, err := GenTgMedia(p, "")
+		media, dst, thumb, err := GenVideoMedia(p, "")
 		if err != nil {
 			return nil, fmt.Errorf("[%s]生成媒体信息：%w", tag, err)
 		}
