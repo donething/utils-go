@@ -31,7 +31,7 @@ func TestGetFrame(t *testing.T) {
 }
 
 func TestCut(t *testing.T) {
-	dst, err := Cut("D:/Tmp/VpsGo/video.mp4", 300*1024*1024, "D:/Tmp/VpsGo/Tmp")
+	dst, err := Cut("D:/Tmp/VpsGo/Tmp/jux-222-C.mp4", 5*1024*1024, "")
 	if err != nil {
 		t.Fatal(err)
 	}

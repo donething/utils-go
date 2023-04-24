@@ -351,6 +351,9 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 	dstPaths := []string{path}
 	if fileSizeThreshold != 0 && info.Size() > fileSizeThreshold {
 		dstPaths, err = dovideo.Cut(path, fileSizeThreshold, tmpDir)
+		if err != nil {
+			return nil, fmt.Errorf("[%s]切割视频出错：%w", tag, err)
+		}
 	}
 
 	// 需要发送媒体
