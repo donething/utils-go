@@ -30,11 +30,11 @@ func (q *QiYe) Push(data interface{}) error {
 
 // PushText 推送文本消息
 //
-// @param agentid 应用 ID
+// agentid 应用 ID
 //
-// @param content 消息内容，支持换行"\n"、以及超链接"A"
+// content 消息内容，支持换行"\n"、以及超链接"A"
 //
-// @param users 推送的目标（多个以"|"分隔），为空表示推送到所有人
+// users 推送的目标（多个以"|"分隔），为空表示推送到所有人
 func (q *QiYe) PushText(agentid int, content string, users string) error {
 	if users == "" {
 		users = "@all"
@@ -47,7 +47,35 @@ func (q *QiYe) PushText(agentid int, content string, users string) error {
 			Agentid: agentid,
 		},
 		Text: QYMsgItemText{
-			Content: content + "\n" + dotext.FormatDate(time.Now(), dotext.TimeFormat),
+			Content: content,
+		},
+	}
+
+	return q.Core.push(qyTokenURL, qySendURL, data)
+}
+
+// PushTextMsg 推送文本消息（含标题、正文、当前时间）
+//
+// agentid 应用 ID
+//
+// title 标题
+//
+// msg 消息内容，支持换行"\n"、以及超链接"A"
+//
+// users 推送的目标（多个以"|"分隔），为空表示推送到所有人
+func (q *QiYe) PushTextMsg(agentid int, title string, msg string, users string) error {
+	if users == "" {
+		users = "@all"
+	}
+
+	data := QYMsgText{
+		QYMsg: &QYMsg{
+			Touser:  users,
+			Msgtype: "text",
+			Agentid: agentid,
+		},
+		Text: QYMsgItemText{
+			Content: title + "\n\n" + msg + "\n\n" + dotext.FormatDate(time.Now(), dotext.TimeFormat),
 		},
 	}
 
@@ -56,17 +84,17 @@ func (q *QiYe) PushText(agentid int, content string, users string) error {
 
 // PushCard 推送卡片消息
 //
-// @param agentid 应用 ID
+// agentid 应用 ID
 //
-// @param title 标题
+// title 标题
 //
-// @param description 内容。可以用"\n"换行，可用设置部分字体颜色（已提供函数快速生成），不可含超链接
+// description 内容。可以用"\n"换行，可用设置部分字体颜色（已提供函数快速生成），不可含超链接
 //
-// @param users 推送的目标（多个以"|"分隔），为空表示推送到所有人
+// users 推送的目标（多个以"|"分隔），为空表示推送到所有人
 //
-// @param url 跳转链接 由于不能为空""，当传递""时，将设为默认值 "https://example.com"
+// url 跳转链接 由于不能为空""，当传递""时，将设为默认值 "https://example.com"
 //
-// @param btnTxt 跳转标识文本（仅在企业微信中有效，在微信中无效）
+// btnTxt 跳转标识文本（仅在企业微信中有效，在微信中无效）
 func (q *QiYe) PushCard(agentid int, title string, description string, users string,
 	url string, btnTxt string) error {
 	if users == "" {
@@ -96,11 +124,11 @@ func (q *QiYe) PushCard(agentid int, title string, description string, users str
 
 // PushMarkdown 推送 Markdown 消息（目前非企业微信不支持该类型）
 //
-// @param agentid 应用 ID
+// agentid 应用 ID
 //
-// @param content 目前仅支持 Markdown 语法的子集
+// content 目前仅支持 Markdown 语法的子集
 //
-// @param users 推送的目标（多个以"|"分隔），为空表示推送到所有人
+// users 推送的目标（多个以"|"分隔），为空表示推送到所有人
 //
 // @see https://developer.work.weixin.qq.com/document/path/90236#markdown%E6%B6%88%E6%81%AF
 func (q *QiYe) PushMarkdown(agentid int, content string, users string) error {
