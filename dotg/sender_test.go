@@ -129,7 +129,7 @@ func TestReplaceMk(t *testing.T) {
 }
 
 func TestTGBot_SendVideo(t *testing.T) {
-	msg, err := tg.SendVideo(os.Getenv("MY_TG_CHAT_LIVE"), "测试标题", "D:/Tmp/VpsGo/Tmp/out 空格.mp4",
+	msg, err := tg.SendVideo(os.Getenv("MY_TG_CHAT_LIVE"), "测试标题", "D:/Tmp/VpsGo/Tmp/jux-222-C.mp4",
 		5*1024*1024, "", true)
 	if err != nil {
 		t.Fatal(err)

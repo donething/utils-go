@@ -5,7 +5,7 @@ type InputMedia struct {
 	// 媒体的类型。可选 TypeAudio、TypeDocument、TypePhoto、TypeVideo
 	Type string `json:"type"`
 
-	// 媒体内容。为 *io.Reader（流）、string（本地文件地址，如"file:///homevideo.mp4"）
+	// 媒体内容。可为 *io.Reader（流）、string（本地文件地址，如"file:///homevideo.mp4"）
 	Media interface{} `json:"media"`
 
 	// 缩略图。始终传递 io.Reader 类型，但发送时读取到表单后，需要设置为字符串("attach://thumb1.jpg")指向表单

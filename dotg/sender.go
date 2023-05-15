@@ -193,17 +193,6 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 // @see https://hdcola.medium.com/telegram-bot-api-server%E4%BD%9C%E5%BC%8A%E6%9D%A1-301d40bd65ba
 func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message, error) {
 	tag := "SendMediaGroup"
-	// 在此处正确关闭输入流的 Reader
-	defer func() {
-		for _, m := range medias {
-			if r, ok := m.Media.(io.ReadCloser); ok {
-				r.Close()
-			}
-			if r, ok := m.Thumbnail.(io.ReadCloser); ok {
-				r.Close()
-			}
-		}
-	}()
 
 	// 使用 bytes.Buffer{} 还是会将数据全部写入内存，所以使用 pipe 替代
 	pr, pw := io.Pipe()
@@ -237,6 +226,10 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 				return nil, fmt.Errorf("[%s]复制视频文件流出错：%w", tag, err)
 			}
 
+			if r, ok := m.Media.(io.ReadCloser); ok {
+				r.Close()
+			}
+
 			m.Media = fmt.Sprintf("attach://media%d", i)
 		}
 
@@ -250,6 +243,10 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 			_, err = io.Copy(partThumbnail, reader)
 			if err != nil {
 				return nil, fmt.Errorf("[%s]复制封面文件流出错：%w", tag, err)
+			}
+
+			if r, ok := m.Thumbnail.(io.ReadCloser); ok {
+				r.Close()
 			}
 
 			m.Thumbnail = fmt.Sprintf("attach://thumb%d", i)
