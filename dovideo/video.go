@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+var (
+	ErrNoVideos = fmt.Errorf("不存在需要合并的视频片段")
+)
+
 // Cut 切割视频为多个分段
 //
 // maxSegSize 单位字节
@@ -93,6 +97,8 @@ func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
 // inputFormat 指定只包含该格式的视频片段。如 ".ts"
 //
 // outputFormat 合并后输入的视频格式。如 ".mp4"
+//
+// 当目录下没有需要合并的视频片段时，返回错误 `ErrNoVideos`
 func Concat(dir string, inputFormat string, outputFormat string) (string, error) {
 	tag := "Concat"
 	files, err := os.ReadDir(dir)
@@ -112,6 +118,11 @@ func Concat(dir string, inputFormat string, outputFormat string) (string, error)
 		}
 
 		videosPath += fmt.Sprintf("file '%s'\n", filepath.Join(dir, file.Name()))
+	}
+
+	// 没有需要合并的视频片段
+	if videosPath == "" {
+		return "", ErrNoVideos
 	}
 
 	// 写入路径到文件
