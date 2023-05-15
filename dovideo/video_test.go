@@ -44,3 +44,12 @@ func TestConvt(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestConcat(t *testing.T) {
+	path, err := Concat("D:/Tmp/live/1684138544128395", ".ts", ".mp4")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("合并完成。输出的视频路径：%s\n", path)
+}

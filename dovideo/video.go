@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Cut 切割视频为多个分段
@@ -83,6 +84,60 @@ func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
 	}
 
 	return dstPaths, nil
+}
+
+// Concat 合并视频
+//
+// dir 指定视频片段所在的目录
+//
+// inputFormat 指定只包含该格式的视频片段。如 ".ts"
+//
+// outputFormat 合并后输入的视频格式。如 ".mp4"
+func Concat(dir string, inputFormat string, outputFormat string) (string, error) {
+	tag := "Concat"
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return "", fmt.Errorf("[%s] 读取目录出错：%w", tag, err)
+	}
+
+	// 需要合并的视频文件的路径
+	videosPath := ""
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		// 只包括指定输入格式的视频文件
+		if !strings.HasSuffix(file.Name(), inputFormat) {
+			continue
+		}
+
+		videosPath += fmt.Sprintf("file '%s'\n", filepath.Join(dir, file.Name()))
+	}
+
+	// 写入路径到文件
+	listFilePath := filepath.Join(dir, fmt.Sprintf("files_%d.txt", time.Now().UnixMilli()))
+	err = os.WriteFile(listFilePath, []byte(videosPath), 0644)
+	if err != nil {
+		return "", fmt.Errorf("[%s]写入视频的路径出错：%w", tag, err)
+	}
+
+	// 	调用 FFmpeg 合并视频
+	outputPath := filepath.Join(dir, fmt.Sprintf("output_%d%s", time.Now().UnixMilli(), outputFormat))
+	args := []string{
+		"-hide_banner",
+		"-f", "concat",
+		"-safe", "0",
+		"-i", listFilePath,
+		"-c", "copy",
+		outputPath,
+	}
+	cmd := exec.Command("ffmpeg", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("[%s]执行合并视频出错：%w: %s", tag, err, string(output))
+	}
+
+	return outputPath, nil
 }
 
 // Convt 转换编码
