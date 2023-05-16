@@ -8,9 +8,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
+	"time"
 )
 
 const (
@@ -195,4 +197,12 @@ func Md5(path string) (string, error) {
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// UniquePath 将路径转为唯一的路径（加当前时间戳）
+func UniquePath(path string) string {
+	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+
+	return filepath.Join(filepath.Dir(path),
+		fmt.Sprintf("%s_%d%s", name, time.Now().UnixMilli(), filepath.Ext(path)))
 }

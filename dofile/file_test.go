@@ -237,3 +237,10 @@ func TestMD5(t *testing.T) {
 		})
 	}
 }
+
+func TestUniquePath(t *testing.T) {
+	path1 := UniquePath("D:/Tmp/live/test.mp4")
+	path2 := UniquePath("D:/Tmp/live/test")
+
+	t.Log(path1, path2)
+}
