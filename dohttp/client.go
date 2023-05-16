@@ -44,7 +44,8 @@ func New(needCookieJar bool, checkSSL bool) DoClient {
 
 	// 设置超时时间
 	dialer := &net.Dialer{
-		Timeout:   0,
+		// Timeout 建立连接的超时时间
+		Timeout:   60 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}
 	c.Transport.(*http.Transport).DialContext = dialer.DialContext
