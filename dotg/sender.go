@@ -35,7 +35,7 @@ const (
 	urlSendMediaGroup = "%s/%s/sendMediaGroup"
 
 	// FileSizeThreshold TG 上传视频有2GB的限制
-	FileSizeThreshold = 1.8 * 1024 * 1024 * 1024
+	FileSizeThreshold = 1.9 * 1024 * 1024 * 1024
 )
 
 var (
