@@ -60,5 +60,5 @@ func TestCutMp4(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%s\n", dst)
+	t.Logf("%+v\n", dst)
 }

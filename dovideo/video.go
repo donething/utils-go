@@ -99,7 +99,7 @@ func Cut(path string, maxSegSize int64, dstDir string) ([]string, error) {
 // 当 dstPath 目标路径。为空""时，将保存到视频的同目录下创建的临时文件夹中
 //
 // @see https://gpac.io/downloads/
-func CutMp4(path string, bySize int64, dstDir string) (string, error) {
+func CutMp4(path string, bySize int64, dstDir string) ([]string, error) {
 	tag := "CutMp4box"
 	// 默认保存到视频的同目录下
 	if dstDir == "" {
@@ -108,22 +108,36 @@ func CutMp4(path string, bySize int64, dstDir string) (string, error) {
 
 	err := os.MkdirAll(dstDir, 0777)
 	if err != nil {
-		return "", fmt.Errorf("[%s]创建临时目录出错：%w", tag, err)
+		return nil, fmt.Errorf("[%s]创建临时目录出错：%w", tag, err)
 	}
 
 	args := []string{
 		"-splits", fmt.Sprintf("%d", bySize/1024),
 		// 使用"-out"参数，需要手动指定占位0，不然就是"out_1".mp4
-		"-out", filepath.Join(dstDir, "out_$num%03d$.mp4"),
+		"-out", filepath.Join(dstDir, "out_$num%02d$.mp4"),
 		path,
 	}
 	cmd := exec.Command("mp4box", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("[%s]执行切割视频出错：%w: %s", tag, err, string(output))
+		return nil, fmt.Errorf("[%s]执行切割视频出错：%w: %s", tag, err, string(output))
 	}
 
-	return dstDir, nil
+	// 用于返回路径的数组
+	dstPaths := make([]string, 0)
+
+	entries, err := os.ReadDir(dstDir)
+	if err != nil {
+		return nil, fmt.Errorf("[%s]读取临时目录出错：%w", tag, err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".mp4") {
+			dstPaths = append(dstPaths, filepath.Join(dstDir, entry.Name()))
+		}
+	}
+
+	return dstPaths, nil
 }
 
 // Concat 合并视频

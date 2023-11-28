@@ -332,9 +332,9 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 	fileSizeThreshold int64, tmpDir string, reserve bool) (*Message, error) {
 	tag := "SendVideo"
 	// 发送完后，删除临时文件
-	var delFiles = make(map[string]string)
+	var delFiles = make([]string, 0)
 	defer func() {
-		for p := range delFiles {
+		for _, p := range delFiles {
 			_ = os.Remove(p)
 		}
 	}()
@@ -347,7 +347,7 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 	// 如果目标视频超过了设置的最大值，就切割
 	dstPaths := []string{path}
 	if fileSizeThreshold != 0 && info.Size() > fileSizeThreshold {
-		dstPaths, err = dovideo.Cut(path, fileSizeThreshold, tmpDir)
+		dstPaths, err = dovideo.CutMp4(path, fileSizeThreshold, tmpDir)
 		if err != nil {
 			return nil, fmt.Errorf("[%s]切割视频出错：%w", tag, err)
 		}
@@ -373,15 +373,14 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 		medias[i] = media
 
 		// 封面图，需要删除
-		delFiles[thumb] = ""
-		// 分段大于2，说明是切割后的视频列表，发送成功后需要删除
+		delFiles = append(delFiles, thumb)
+		// 分段大于2，说明是切割后的视频片段，发送成功后需要删除
 		if len(dstPaths) >= 2 {
-			delFiles[dst] = ""
-			delFiles[p] = ""
+			delFiles = append(delFiles, p)
 		}
 		// 不保留原文件，删除
 		if !reserve {
-			delFiles[dst] = ""
+			delFiles = append(delFiles, dst)
 		}
 	}
 
