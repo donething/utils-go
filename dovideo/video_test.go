@@ -54,3 +54,11 @@ func TestConcat(t *testing.T) {
 
 	t.Logf("合并完成。输出的视频路径：%s\n", outputPath)
 }
+
+func TestCutMp4(t *testing.T) {
+	dst, err := CutMp4("D:/Downloads/PT/无码破解中字/爱田奈奈/JUC-620-UC.mp4", 2*1024*1024*1024, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%s\n", dst)
+}
