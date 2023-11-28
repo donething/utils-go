@@ -114,7 +114,7 @@ func CutMp4(path string, bySize int64, dstDir string) ([]string, error) {
 	args := []string{
 		"-splits", fmt.Sprintf("%d", bySize/1024),
 		// 使用"-out"参数，需要手动指定占位0，不然就是"out_1".mp4
-		"-out", filepath.Join(dstDir, "out_$num%02d$.mp4"),
+		"-out", filepath.Join(dstDir, "$num%02d$.mp4"),
 		path,
 	}
 	cmd := exec.Command("mp4box", args...)

@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -327,25 +328,44 @@ func LegalMk(text string) string {
 //
 // tmpDir 设置临时文件的目录（为空""则在文件同目录）
 //
-// reserve 是否保留原文件（或转码后的视频文件）
+// delete 是否保留原文件（或转码后的视频文件）
 func (bot *TGBot) SendVideo(chatID string, title string, path string,
-	fileSizeThreshold int64, tmpDir string, reserve bool) (*Message, error) {
+	fileSizeThreshold int64, tmpDir string, delete bool) (*Message, error) {
 	tag := "SendVideo"
 	// 发送完后，删除临时文件
 	var delFiles = make([]string, 0)
 	defer func() {
 		for _, p := range delFiles {
-			_ = os.Remove(p)
+			err := os.RemoveAll(p)
+			if err != nil {
+				fmt.Printf("[%s]删除文件'%s'出错：%s\n", tag, p, err)
+			}
 		}
 	}()
 
+	newPath := path
+	// 不是 mp4 格式的视频，才要转码为 mp4
+	if strings.ToLower(filepath.Ext(path)) != ".mp4" {
+		newPath = strings.TrimSuffix(path, filepath.Ext(path)) + ".mp4"
+		err := dovideo.Convt(path, newPath)
+		if err != nil {
+			return nil, fmt.Errorf("[%s]转换视频编码出错：%w", tag, err)
+		}
+
+		// 删除原视频。本来可以放在末尾的，但是占用磁盘空间，所以在转码成功后删除
+		err = os.Remove(path)
+		if err != nil {
+			return nil, fmt.Errorf("[%s]删除原视频出错：%w", tag, err)
+		}
+	}
+
 	// 获取文件大小
-	info, err := os.Stat(path)
+	info, err := os.Stat(newPath)
 	if err != nil {
 		return nil, fmt.Errorf("[%s]获取文件信息出错：%w", tag, err)
 	}
 	// 如果目标视频超过了设置的最大值，就切割
-	dstPaths := []string{path}
+	dstPaths := []string{newPath}
 	if fileSizeThreshold != 0 && info.Size() > fileSizeThreshold {
 		dstPaths, err = dovideo.CutMp4(path, fileSizeThreshold, tmpDir)
 		if err != nil {
@@ -358,9 +378,9 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 	for i, p := range dstPaths {
 		// 创建媒体信息
 		// 仅第一个媒体携带标题信息，作为整个媒体集的标题
-		media, dst, thumb, err := GenVideoMedia(p, "")
+		media, err := GenVideoMedia(p, "")
 		if err != nil {
-			return nil, fmt.Errorf("[%s]生成媒体信息：%w", tag, err)
+			return nil, fmt.Errorf("[%s]生成媒体信息出错：%w", tag, err)
 		}
 		if i == 0 {
 			media.Caption = title
@@ -371,17 +391,18 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 			media.Name = fmt.Sprintf("P%02d", i+1)
 		}
 		medias[i] = media
+	}
 
-		// 封面图，需要删除
-		delFiles = append(delFiles, thumb)
-		// 分段大于2，说明是切割后的视频片段，发送成功后需要删除
-		if len(dstPaths) >= 2 {
-			delFiles = append(delFiles, p)
-		}
-		// 不保留原文件，删除
-		if !reserve {
-			delFiles = append(delFiles, dst)
-		}
+	if len(dstPaths) >= 2 {
+		// 谨慎：多片段时，删除临时视频目录
+		delFiles = append(delFiles, filepath.Dir(dstPaths[0]))
+	} else {
+		// 只需删除封面
+		delFiles = append(delFiles, strings.TrimSuffix(newPath, filepath.Ext(newPath))+".jpg")
+	}
+	// 不保留原文件，删除
+	if delete {
+		delFiles = append(delFiles, newPath)
 	}
 
 	// 发送
