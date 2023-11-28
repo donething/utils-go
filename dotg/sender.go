@@ -6,6 +6,7 @@ package dotg
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/donething/utils-go/dohttp"
 	"github.com/donething/utils-go/dovideo"
@@ -34,7 +35,7 @@ const (
 	urlSendMediaGroup = "%s/%s/sendMediaGroup"
 
 	// FileSizeThreshold TG 上传视频有2GB的限制
-	FileSizeThreshold = 2 * 1024 * 1024 * 1024
+	FileSizeThreshold = 1.8 * 1024 * 1024 * 1024
 )
 
 var (
@@ -170,11 +171,11 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 	// 等待发送完成，分情况处理
 	result := <-chResult
 	// 有发送错误
-	if result.Error != nil && result.Error != ErrResend {
+	if result.Error != nil && !errors.Is(result.Error, ErrResend) {
 		return nil, fmt.Errorf("[%s]%s", tag, result.Error)
 	}
 	// 需要重发
-	if result.Error == ErrResend {
+	if errors.Is(result.Error, ErrResend) {
 		return bot.SendMessage(chatID, text)
 	}
 
@@ -284,11 +285,11 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 	// 发送完数据，等待执行完成，分情况处理
 	result := <-chResult
 	// 有发送错误
-	if result.Error != nil && result.Error != ErrResend {
+	if result.Error != nil && !errors.Is(result.Error, ErrResend) {
 		return nil, fmt.Errorf("[%s]%s", tag, result.Error)
 	}
 	// 需要重发
-	if result.Error == ErrResend {
+	if errors.Is(result.Error, ErrResend) {
 		return bot.SendMediaGroup(chatID, medias)
 	}
 

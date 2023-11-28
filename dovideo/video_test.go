@@ -56,7 +56,7 @@ func TestConcat(t *testing.T) {
 }
 
 func TestCutMp4(t *testing.T) {
-	dst, err := CutMp4("D:/Downloads/PT/无码破解中字/爱田奈奈/JUC-620-UC.mp4", 2*1024*1024*1024, "")
+	dst, err := CutMp4("D:/Temp/VpsGo/TYOD-263.1080p.mp4", 2*1024*1024*1024, "")
 	if err != nil {
 		t.Fatal(err)
 	}
