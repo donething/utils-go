@@ -147,3 +147,24 @@ func (db *DoBolt) Batch(data map[string][]byte, bucket []byte) error {
 
 	return err
 }
+
+// Clear 清空桶
+func (db *DoBolt) Clear(bucket []byte) error {
+	// 获取事务
+	err := db.DB.Update(func(tx *bolt.Tx) error {
+		// 直接删除桶
+		if err := tx.DeleteBucket(bucket); err != nil {
+			return err
+		}
+
+		// 重新创建同名的桶
+		_, err := tx.CreateBucket(bucket)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
+}
