@@ -92,6 +92,32 @@ func (db *DoBolt) Del(key []byte, bucket []byte) ([]byte, error) {
 	return data, err
 }
 
+// DelPrefixAll 删除桶中的为指定前缀的所有数据
+func (db *DoBolt) DelPrefixAll(prefix []byte, bucket []byte) error {
+	// 在事务中执行删除操作
+	err := db.DB.Update(func(tx *bolt.Tx) error {
+		// 找到要操作的 bucket
+		b := tx.Bucket(bucket)
+		if b == nil {
+			// 如果bucket不存在，直接返回
+			return bolt.ErrBucketNotFound
+		}
+
+		// 遍历 bucket
+		c := b.Cursor()
+		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+			// 删除匹配前缀的键
+			if err := b.Delete(k); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return err
+}
+
 // Query 查询指定桶内的所有数据
 //
 // 参数 keySub 需要包含的的子串。当为空时，返回所有数据
