@@ -297,29 +297,6 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 	return result.Message, nil
 }
 
-// EscapeMk 转义将被 Markdown V2 格式字符包围的文本
-//
-// 用法：EscapeMk("测#试Markdown文本*消息*结束：") + "*[搜索](https://www.google.com/)* #标签"
-//
-// 加号(+)前一段将不作为 Markdown 渲染，在 TG 中显示为"测#试Markdown文本*消息*结束："；后一段将 渲染为 Markdown
-//
-// 即结果："测#试Markdown文本*消息*结束：搜索 #标签"。其中“搜索”的字体会加粗
-//
-// 参考：https://core.telegram.org/bots/api#markdownv2-style
-func EscapeMk(text string) string {
-	// 已替换'['，就不用替换']'了
-	reg := regexp.MustCompile("([_*\\[\\]()~`>#+\\-=|{}.!])")
-	return reg.ReplaceAllString(text, "\\${1}")
-}
-
-// LegalMk 转义 TG 的保留字符。用于转义最后将发送到 TG 的标题
-//
-// 否则，直接发送会报错，提示需要转义，如'\#'
-func LegalMk(text string) string {
-	reg := regexp.MustCompile("([#.])")
-	return reg.ReplaceAllString(text, "\\${1}")
-}
-
 // SendVideo 发送视频。只支持在 TG Local Server 模式下发送视频
 //
 // 仅适合 TG Local Server 模式，因为媒体数据是通过"file://"协议传的，而不是建立pipe管道读写数据，
@@ -408,4 +385,27 @@ func (bot *TGBot) SendVideo(chatID string, title string, path string,
 
 	// 发送
 	return bot.SendMediaGroup(chatID, medias)
+}
+
+// EscapeMk 转义将被 Markdown V2 格式字符包围的文本
+//
+// 用法：EscapeMk("测#试Markdown文本*消息*结束：") + "*[搜索](https://www.google.com/)* #标签"
+//
+// 加号(+)前一段将不作为 Markdown 渲染，在 TG 中显示为"测#试Markdown文本*消息*结束："；后一段将 渲染为 Markdown
+//
+// 即结果："测#试Markdown文本*消息*结束：搜索 #标签"。其中“搜索”的字体会加粗
+//
+// 参考：https://core.telegram.org/bots/api#markdownv2-style
+func EscapeMk(text string) string {
+	// 已替换'['，就不用替换']'了
+	reg := regexp.MustCompile("([_*\\[\\]()~`>#+\\-=|{}.!])")
+	return reg.ReplaceAllString(text, "\\${1}")
+}
+
+// LegalMk 转义 TG 的保留字符。用于转义最后将发送到 TG 的标题
+//
+// 否则，直接发送会报错，提示需要转义，如'\#'
+func LegalMk(text string) string {
+	reg := regexp.MustCompile("([#])")
+	return reg.ReplaceAllString(text, "\\${1}")
 }
