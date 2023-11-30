@@ -73,7 +73,9 @@ func (bot *TGBot) SetAddr(addr string) {
 
 // Send 实际执行发送请求
 //
-// 出错会通过 chan 回传 error。如果 error 是
+// # reader 在创建处当发送完成后，自行关闭
+//
+// 出错会通过 chan 回传 error
 func (bot *TGBot) Send(url string, reader io.Reader, contentType string, chResult chan SendResult) {
 	tag := "Send"
 	// 发送
@@ -87,10 +89,6 @@ func (bot *TGBot) Send(url string, reader io.Reader, contentType string, chResul
 		return
 	}
 	defer resp.Body.Close()
-
-	if c, ok := reader.(io.ReadCloser); ok {
-		c.Close()
-	}
 
 	// 读取响应
 	bs, err := io.ReadAll(resp.Body)
@@ -188,6 +186,8 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 // *只设置第一个媒体的`Caption`时，将作为该集的标题*，所有媒体可以设置`Name`属性
 //
 // 注意使用 EscapeMk、LegalMk 来转义字符
+//
+// # 当 InputMedia.Media 为 reader 时，在创建处发送完成后，自行关闭
 //
 // 因为原生 api 限制发送文件的大小，若需发送大文件，可以运行本地 TG 服务,
 // 设置 tg.SetAddr("http://127.0.0.1:1234")后，来发送
