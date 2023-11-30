@@ -151,9 +151,9 @@ func (bot *TGBot) Send(url string, reader io.Reader, contentType string, chResul
 	}
 }
 
-// SendMessage 发送Markdown文本消息
+// SendMessage 发送 Markdown V2 文本消息
 //
-// 注意使用 EscapeMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
+// 注意使用 EscapeMk、LegalMk 来转义字符
 func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 	tag := "SendMessage"
 	form := url.Values{
@@ -187,7 +187,7 @@ func (bot *TGBot) SendMessage(chatID string, text string) (*Message, error) {
 //
 // *只设置第一个媒体的`Caption`时，将作为该集的标题*，所有媒体可以设置`Name`属性
 //
-// 注意使用 EscapeMk 来转义文本中的非法字符（即属于 Markdown 字符，而不想当做 Markdown 字符渲染）
+// 注意使用 EscapeMk、LegalMk 来转义字符
 //
 // 因为原生 api 限制发送文件的大小，若需发送大文件，可以运行本地 TG 服务,
 // 设置 tg.SetAddr("http://127.0.0.1:1234")后，来发送
@@ -297,11 +297,11 @@ func (bot *TGBot) SendMediaGroup(chatID string, medias []*InputMedia) (*Message,
 	return result.Message, nil
 }
 
-// EscapeMk 转义标题中不想渲染为 Markdown V2 的字符。用于转义已经被 Markdown 字符包围的文本
+// EscapeMk 转义将被 Markdown V2 格式字符包围的文本
 //
 // 用法：EscapeMk("测#试Markdown文本*消息*结束：") + "*[搜索](https://www.google.com/)* #标签"
 //
-// 加号前一段将转义，不渲染为 Markdown；后一段将作为 Markdown 渲染。
+// 加号(+)前一段将不作为 Markdown 渲染，在 TG 中显示为"测#试Markdown文本*消息*结束："；后一段将 渲染为 Markdown
 //
 // 即结果："测#试Markdown文本*消息*结束：搜索 #标签"。其中“搜索”的字体会加粗
 //
@@ -312,11 +312,11 @@ func EscapeMk(text string) string {
 	return reg.ReplaceAllString(text, "\\${1}")
 }
 
-// LegalMk 合法化标题中的非法 Markdown V2 字符。用于转义需要作为 Markdown 渲染的文本
+// LegalMk 转义 TG 的保留字符。用于转义最后将发送到 TG 的标题
 //
 // 否则，直接发送会报错，提示需要转义，如'\#'
 func LegalMk(text string) string {
-	reg := regexp.MustCompile("([#])")
+	reg := regexp.MustCompile("([#.])")
 	return reg.ReplaceAllString(text, "\\${1}")
 }
 
