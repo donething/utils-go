@@ -56,7 +56,7 @@ func TestSendMediaGroupPic(t *testing.T) {
 		{
 			Type: TypePhoto,
 			Name: "p2 路径",
-			// Media: fmt.Sprintf("file:///%s", path),
+			// Media: fmt.Sprintf("file://%s", path),
 			Media: bytes.NewReader(f1),
 		},
 	}
