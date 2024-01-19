@@ -114,7 +114,7 @@ func TestBase64Encode(t *testing.T) {
 
 func TestBytesHumanReadable(t *testing.T) {
 	type args struct {
-		bytes int64
+		bytes uint64
 	}
 	tests := []struct {
 		name string

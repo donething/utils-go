@@ -137,12 +137,12 @@ func Base64Decode(str string) ([]byte, error) {
 // BytesHumanReadable 将文件大小的字节转为可读的字符，如"102 MB"
 //
 // https://stackoverflow.com/a/30822306
-func BytesHumanReadable(bytes int64) string {
+func BytesHumanReadable(bytes uint64) string {
 	const unit = 1024
 	if bytes < unit {
 		return fmt.Sprintf("%d B", bytes)
 	}
-	div, exp := int64(unit), 0
+	div, exp := uint64(unit), 0
 	for n := bytes / unit; n >= unit; n /= unit {
 		div *= unit
 		exp++
