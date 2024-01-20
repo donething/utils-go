@@ -2,12 +2,12 @@ package dohttp
 
 import "net"
 
-// IsPublicIP 判断指定 IPv4 是否为公网 IP
+// IsPublicIPv4 判断指定 IPv4 是否为公网 IP
 //
 // 字符串类型的 IP 地址 可以通过 net.ParseIP() 函数转为 net.IP
 //
 // @see https://blog.csdn.net/whatday/article/details/109689258
-func IsPublicIP(IP net.IP) bool {
+func IsPublicIPv4(IP net.IP) bool {
 	if IP.IsLoopback() || IP.IsLinkLocalMulticast() || IP.IsLinkLocalUnicast() {
 		return false
 	}
